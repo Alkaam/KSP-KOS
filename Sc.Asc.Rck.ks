@@ -1,6 +1,6 @@
 PARAMETER gOrbit IS 85000. //Orbit to Reach, DEFAULT = 85km.
 PARAMETER gHeading IS 90. //Direction to Orbit, DEFAULT = 90 (EAST).
-PARAMETER gStaging IS FALSE. //Call for Staging Events in Mission File.
+PARAMETER gStaging IS TRUE. //Call for Staging Events in Mission File.
 SET TVAL TO 0.
 SET SVAL TO UP.
 LOCK THROTTLE TO TVAL.
@@ -83,15 +83,6 @@ until mode = 0 {
 		}
 		IF (SALT >= 70000) {SET MODE TO 20.}
 	}
-	else if mode = 7{ // Circularization
-		SET TempTime TO ETA:APOAPSIS-tT2B.
-		IF (WARP = 0 AND TempTime > 70) {SET WARP TO 3.}
-		IF (WARP > 0 AND TempTime <= 70) {SET WARP TO 0.}
-		IF (TempTime  <= 50) {SET SVAL TO HEADING(90,-1).}
-		IF (SHIP:PERIAPSIS >= gOrbit) {SET TVAL TO 0. SET mode TO 20.}
-		ELSE IF (TempTime  < 0 AND TVAL = 0) {SET TVAL TO 1.}
-	}
-
 	else if mode = 20 {
 		SET TVAL TO 0.
 		unlock steering.

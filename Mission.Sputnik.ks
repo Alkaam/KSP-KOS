@@ -4,6 +4,7 @@ IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PREFLIGHT" OR gDebug) {
 	fDownLib("LibGens.ks",TRUE).
 	fDownLib("LibMan.ks",TRUE).
 	fDownload("Sc.Asc.Rck.ks").
+	fDownload("Ts.Circ.ks").
 }
 
 FUNCTION fMissStage {
@@ -25,8 +26,8 @@ FUNCTION fStaging {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck.ks",100000).
+	RUNPATH("Sc.Asc.Rck.ks",85000).
 }
-IF (SHIP:STATUS = "ORBITING") {
-	CLEARSCREEN.
+IF (SHIP:STATUS = "SUB_ORBITAL") {
+	RUNPATH("Ts.Circ.ks",85000).
 }
