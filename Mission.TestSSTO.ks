@@ -22,7 +22,7 @@ FUNCTION fStaging {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-  fDownload("Asc.SSTO.ks",TRUE).
+  fDownload("Sc.Asc.SSTO.ks",TRUE).
 }
 IF (SHIP:STATUS = "ORBITING") {
 	CLEARSCREEN.
