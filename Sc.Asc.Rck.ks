@@ -1,15 +1,19 @@
 PARAMETER gOrbit IS 85000. //Orbit to Reach, DEFAULT = 85km.
+PARAMETER gStageLimit IS 0. //Limit to Autostage.
 PARAMETER gHeading IS 90. //Direction to Orbit, DEFAULT = 90 (EAST).
 PARAMETER gStaging IS TRUE. //Call for Staging Events in Mission File.
+// ######### OBSOLETE TO BE REMOVED ##########
+LOCK GRAVITY TO (CONSTANT():G * BODY:MASS) / (SHIP:ALTITUDE+BODY:RADIUS)^2.
+LOCK TWR TO MAX( 0.001, MAXTHRUST / (MASS*GRAVITY)).
+// ###### CHECK ATMOSPHERE ######
+SET gAtm TO BODY:ATM:EXISTS.
+SET gAtmH TO BODY:ATM:HEIGHT.
+// ###### SET UP THROTTLE AND STEERING ######
 SET TVAL TO 0.
 SET SVAL TO UP.
 LOCK THROTTLE TO TVAL.
 LOCK STEERING TO SVAL.
-LOCK GRAVITY TO (CONSTANT():G * BODY:MASS) / (SHIP:ALTITUDE+BODY:RADIUS)^2.
-LOCK TWR TO MAX( 0.001, MAXTHRUST / (MASS*GRAVITY)).
-SET gAtm TO BODY:ATM:EXISTS.
-SET gAtmH TO BODY:ATM:HEIGHT.
-SET gEndGravTurn TO gAtmH * 0.87.
+// ###### SET UP VESSEL ######
 SAS OFF.
 RCS OFF.
 LIGHTS OFF.
@@ -22,7 +26,7 @@ IF SHIP:STATUS = "FLYING" { SET MODE TO 3. }
 IF SHIP:STATUS = "SUBORBITAL" { SET MODE TO 5. }
 
 until mode = 0 {
-	IF (gStaging) { fMissStage(). }
+	IF (gStaging) { fMissStage(). }  // ### STAGING CHECK ###
 	SET VSI TO ROUND(VERTICALSPEED,2).
 	SET HSI TO ROUND(GROUNDSPEED,2).
 	SET SALT TO ROUND(SHIP:ALTITUDE,0).
@@ -46,35 +50,35 @@ until mode = 0 {
 		print "DeV: "+ROUND(tDeltaV,1)+" m/s2 in T "+-1*ROUND(ETA:APOAPSIS-tT2B)+" s"+tSpacer AT (3,9).
 	}
 
-	if mode = 1 { // launch print "T-MINUS 10 seconds". lock steering to up. wait 1.
+	if mode = 1 { // ### FINAL SET UP AND LAUNCH
 		SET TVAL TO 1.
 		SET SVAL TO SHIP:FACING.
 		WAIT 2.
 		STAGE.
 		SET MODE TO 2.
 	}
-	else if mode = 2{ // gravity turn
+	else if mode = 2{ // ### FLY UP TO SAFETY
 		SET TVAL TO 1.
 		SET SVAL TO SHIP:FACING.
 		if (SALT > 500 AND VSI > 150) { set mode to 3.}
 	}
-	else if mode = 3{ // Gravity Turn Step 1/2
+	else if mode = 3{ // ### G-Turn UNTIL APOAPSIS IS 35 SEC AHEAD
 		SET TVAL TO GEN_TWR2Th(1.50).
 		SET tPtc TO GEN_TgPitch2(5,gOrbit).
 		SET SVAL TO heading (90, tPtc).
 		if ETA:APOAPSIS > 35 { set mode to 5. }
 		ELSE if SHIP:APOAPSIS >= gOrbit { set mode to 6. }
 	}
-	else if mode = 5{ // Gravity Turn Step 2/2
+	else if mode = 5{ // G-Turn UNTIL APOAPSIS REACH ORBIT HEIGHT
 		SET DiffVelComp TO MIN(0.50,MAX(-0.95,(40-ETA:APOAPSIS)/50)).
 		SET SVAL TO HEADING(90,GEN_TgPitch2(GEN_AngPro(8),gOrbit)).
 		SET TVAL TO GEN_TWR2Th(1.1+DiffVelComp).
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			IF (gAtm) {SET mode TO 6.}
-			ELSE {SET mode TO 7.}
+			ELSE {SET mode TO 20.}
 		}
 	}
-	else if mode = 6{ // Coast to Edge of Atmosphere
+	else if mode = 6{ // IF ATMO COAST TO EDGE OF ATMO
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			SET TVAL TO 0.
 			SET SVAL TO HEADING(90,GEN_AngPro()).
@@ -83,7 +87,7 @@ until mode = 0 {
 		}
 		IF (SALT >= 70000) {SET MODE TO 20.}
 	}
-	else if mode = 20 {
+	else if mode = 20 { // SCRIPT END, RELEASE CONTROLS
 		SET TVAL TO 0.
 		unlock steering.
 		unlock throttle.
@@ -92,9 +96,7 @@ until mode = 0 {
 		wait 5.
 	}
 
-	// this is the staging code to work with all rockets //
-
-	if stage:number > 0 AND maxthrust = 0 {
+	if stage:number > gStageLimit AND maxthrust = 0 {
 		LOCK THROTTLE TO 0.
 		WAIT 1.
 		STAGE.
