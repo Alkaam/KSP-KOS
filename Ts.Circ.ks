@@ -59,7 +59,15 @@ UNTIL mode = 0 {
 			SET TVAL TO 0.
 			SET mode TO 1.
 		}
+	} ELSE IF (mode = 20) { // SCRIPT END, RELEASE CONTROLS
+		SET TVAL TO 0.
+		unlock steering.
+		unlock throttle.
+		set mode to 0.
+		print "Circularization Complete"+tSpacer AT (3,9).
+		wait 5.
 	}
+
 	//TODO: Add part when Trajectory is Escaping to perform Planet Capture
 	print "Scola-Sys - Circularization (RM:"+mode+") "+SHIP:STATUS+tSpacer AT (3,2).
 	print "Target Orbit: "+ROUND(gOrbit/1000,0)+" km [Pe:"+gCircPe+"]"+tSpacer AT (3,3).
