@@ -79,6 +79,8 @@ until mode = 0 {
 		}
 	}
 	else if mode = 6{ // IF ATMO COAST TO EDGE OF ATMO
+		IF ((70000-SALT)/VSI > 70 AND WARP = 0) {SET WARP TO 3.}
+		ELSE IF ((70000-SALT)/VSI < 60 AND WARP > 0) {SET WARP TO 0.}
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			SET TVAL TO 0.
 			SET SVAL TO HEADING(90,GEN_AngPro()).
