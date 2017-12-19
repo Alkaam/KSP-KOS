@@ -1,7 +1,10 @@
 PRINT "Scola-Sys -> Mission... LOADED".
 
-fDownLib("LibGens.ks",TRUE).
-fDownLib("LibMan.ks",TRUE).
+IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PREFLIGHT" OR gDebug) {
+	fDownLib("LibGens.ks",TRUE).
+	fDownLib("LibMan.ks",TRUE).
+	fDownload("Sc.Asc.Rck.ks").
+}
 
 FUNCTION fMissStage {
 	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER > 0) {
@@ -22,7 +25,7 @@ FUNCTION fStaging {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-  fDownload("ScC.Ascension.ks",TRUE).
+	RUNPATH("Sc.Asc.Rck.ks",100000).
 }
 IF (SHIP:STATUS = "ORBITING") {
 	CLEARSCREEN.

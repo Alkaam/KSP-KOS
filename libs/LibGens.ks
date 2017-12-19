@@ -14,6 +14,13 @@ FUNCTION GEN_TgPitch {
 	PARAMETER fMaxHeight.
 	RETURN MAX( fMinPitch, fStartAngle * (1 - ALT:RADAR / fMaxHeight)).
 }
+FUNCTION GEN_TgPitch2 {
+	PARAMETER fMinPitch.
+	PARAMETER fMaxHeight.
+	SET PTC1 TO MAX( fMinPitch, 90 * (1 - ALT:RADAR / (fMaxHeight*0.30))).
+	SET PTC2 TO MAX( fMinPitch, (90*0.62) * (1 - ALT:RADAR / (fMaxHeight*0.71))).
+	RETURN MAX(PTC1,PTC2).
+}
 FUNCTION GEN_TWR2Th {
 	PARAMETER fPower.
 	RETURN MIN(1.0,MAX(0.0,fPower/fTWR)).
