@@ -13,15 +13,13 @@ FUNCTION TARGET_ANGLE {
 
 //Maneuver Planning
 
-SET TARGET TO ORBITABLE(gTarget).
-if () {}
+SET TARGET TO gTarget.
 
-local A1 is Kerbin:radius + (ship:altitude + Mun:altitude)/2.
-local A2 is Mun:obt:semimajoraxis.
-local T1 is T2 * (A1/A2)^1.5.
-local T2 is Mun:obt:period.
-local alpha is mod(180*(T1/T2), 360).
-
-// the angle we are looking for is 180-alpha
-// or 360-alpha if you are using angles in range [0..360]
-local transferAngle is 360 - alpha.
+//TODO: Add Satellite Network Positioning, can just do Beta = (360/gSatTot)*gSatNum
+//TODO: Add Satellite Virtual Position, to fine tune the orbit (Similar to Docking)
+LOCAL A1 IS BODY:RADIUS + (SHIP:ALTITUDE + TARGET:ALTITUDE)/2.
+LOCAL A2 IS TARGET:OBT:SEMIMAJORAXIS.
+LOCAL T1 IS T2 * (A1/A2)^1.5.
+LOCAL T2 IS TARGET:OBT:PERIOD.
+LOCAL alpha IS MOD(180*(T1/T2), 360).
+LOCAL transferAngle IS 360-alpha.
