@@ -19,17 +19,6 @@ LOCK STEERING TO SVAL.
 SET T2Node TO 100.
 
 //Maneuver Planning
-//SET MyOrbPer Orbital Period
-//SET TgOrbPer Period
-//SET MyAngVel Angular Velocity
-//SET TgAngVel Angular Velocity
-//SET MyAngPos Position (Angular)
-//SET TgAngPos Position (Angular)
-//CALC TrObtPer Transfer Orbit Period (Kepler????)
-//CALC TrAngDelta = TrObtPer*TgAngVel Angle Covered by the Tg during Transfert
-//CALC PhaseAngle = TgAngPos-MyAngPos. [0...360]
-
-FUNCTION Trans_Calc {
 	IF (gTarget <> "None") {
 		SET TARGET TO gTarget.
 		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + TARGET:ALTITUDE)/2.
@@ -42,8 +31,15 @@ FUNCTION Trans_Calc {
 		SET T2 TO MAN_OrbT(A2).
 	}
 	SET T1 TO T2 * (A1/A2)^1.5.
-	SET anAlpha TO MOD(180*(T1/T2), 360).
-	SET TransAng TO 360-anAlpha.
+
+SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
+SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
+SET PhaseAngle = MATH_PhaseAng(). //[0...360].
+SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
+
+
+
+FUNCTION Trans_Calc {
 }
 //TODO: Add Satellite Network Positioning, can just do Beta = (360/gSatTot)*gSatNum
 //TODO: Add Satellite Virtual Position, to fine tune the orbit (Similar to Docking)
