@@ -1,0 +1,13 @@
+//### FROM G_Space ## Code to calc Distance of 2 point ###
+
+set position1 to latlng(lat1,lng1):position.
+set position2 to latlng(lat2,lng2):position.
+
+set distance to (position1-position2):mag.
+
+
+set north_vector to heading(0,0):vector.
+set east_vector to heading(90,0):vector.
+
+set vel_lat to VDOT(north_vector,SHIP:velocity:surface):mag.
+set vel_lng to VDOT(east_vector,SHIP:velocity:surface):mag.
