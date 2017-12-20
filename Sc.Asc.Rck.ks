@@ -88,14 +88,13 @@ until mode = 0 {
 			SET TVAL TO 0.20.
 		}
 		IF (SALT >= 70000) {SET MODE TO 20.}
-	}
-	else if mode = 20 { // SCRIPT END, RELEASE CONTROLS
+	} ELSE IF mode = 20 { // SCRIPT END, RELEASE CONTROLS
 		SET TVAL TO 0.
-		unlock steering.
-		unlock throttle.
-		set mode to 0.
-		print "Ascent Phase Complete"+tSpacer AT (3,9).
-		wait 5.
+		UNLOCK STEERING.
+		UNLOCK THROTTLE.
+		SET mode TO 0.
+		PRINT "Ascent Phase Complete"+tSpacer AT (3,9).
+		WAIT 5.
 	}
 
 	if stage:number > gStageLimit AND maxthrust = 0 {

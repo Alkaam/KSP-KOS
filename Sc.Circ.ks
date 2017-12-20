@@ -27,7 +27,7 @@ UNTIL mode = 0 {
 		SET mode TO 2.
 	}
 	IF mode = 2 { // Warpo to Position
-		SET TempTime TO T2Node-tT2B.
+		LOCK TempTime TO T2Node-tT2B.
 		IF (WARP = 0 AND TempTime > 50+tBTime) {SET WARP TO 3.}
 		ELSE IF (WARP > 0 AND TempTime <= 50+tBTime) {SET WARP TO 0.}
 		IF (TempTime  <= 30+tBTime) {
@@ -43,7 +43,7 @@ UNTIL mode = 0 {
 		IF (SHIP:PERIAPSIS >= gOrbit) {
 			SET TVAL TO 0.
 			SET mode TO 20.
-		} ELSE IF (TempTime  < 0 AND TVAL = 0) {
+		} ELSE IF (TempTime <= 0 AND TVAL = 0) {
 			SET TVAL TO 1.
 		} ELSE IF (ETA:APOAPSIS > 100) {
 			SET TVAL TO 0.
@@ -53,7 +53,7 @@ UNTIL mode = 0 {
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			SET TVAL TO 0.
 			SET mode TO 20.
-		} ELSE IF (TempTime  < 0 AND TVAL = 0) {
+		} ELSE IF (TempTime <= 0 AND TVAL = 0) {
 			SET TVAL TO 1.
 		} ELSE IF (ETA:PERIAPSIS > 100) {
 			SET TVAL TO 0.
