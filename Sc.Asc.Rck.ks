@@ -23,7 +23,7 @@ CLEARSCREEN.
 SET mode TO 1.
 IF SHIP:STATUS = "PREFLIGHT" { SET MODE TO 1. }
 IF SHIP:STATUS = "FLYING" { SET MODE TO 3. }
-IF SHIP:STATUS = "SUBORBITAL" { SET MODE TO 5. }
+IF SHIP:STATUS = "SUB_ORBITAL" { SET MODE TO 20. }
 
 until mode = 0 {
 	IF (gStaging) { fMissStage(). }  // ### STAGING CHECK ###
@@ -66,13 +66,14 @@ until mode = 0 {
 		SET TVAL TO GEN_TWR2Th(1.50).
 		SET tPtc TO GEN_TgPitch2(5,gOrbit).
 		SET SVAL TO heading (90, tPtc).
-		if ETA:APOAPSIS > 35 { set mode to 5. }
+		if ETA:APOAPSIS > 35 AND SALT >= 35000 { set mode to 5. }
 		ELSE if SHIP:APOAPSIS >= gOrbit { set mode to 6. }
 	}
 	else if mode = 5{ // G-Turn UNTIL APOAPSIS REACH ORBIT HEIGHT
 		SET DiffVelComp TO MIN(0.50,MAX(-0.95,(40-ETA:APOAPSIS)/50)).
 		SET SVAL TO HEADING(90,GEN_TgPitch2(GEN_AngPro(8),gOrbit)).
 		SET TVAL TO GEN_TWR2Th(1.1+DiffVelComp).
+		IF (WARP > 0 AND SHIP:APOAPSIS >= gOrbit-5000) {SET WARP TO 0.}
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			IF (gAtm) {SET mode TO 6.}
 			ELSE {SET mode TO 20.}
@@ -80,7 +81,7 @@ until mode = 0 {
 	}
 	else if mode = 6{ // IF ATMO COAST TO EDGE OF ATMO
 		IF ((70000-SALT)/VSI > 70 AND WARP = 0) {SET WARP TO 3.}
-		ELSE IF ((70000-SALT)/VSI < 60 AND WARP > 0) {SET WARP TO 0.}
+		ELSE IF ((70000-SALT)/VSI < 45 AND WARP > 0) {SET WARP TO 0.}
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			SET TVAL TO 0.
 			SET SVAL TO HEADING(90,GEN_AngPro()).

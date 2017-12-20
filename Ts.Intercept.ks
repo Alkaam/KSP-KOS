@@ -1,7 +1,8 @@
 //Intercept Script, can be Used to Intercept another Vehicle
 // or to set up an equidistant satellite network.
 
-PARAMETER gTarget.
+PARAMETER gOrbit IS 2863330.
+PARAMETER gTarget IS "None".
 PARAMETER gSatNum IS 0. //the Number of the Satellite like in a row of 6 satellite, this is the 3
 PARAMETER gSatTot IS 0. //total number of satellite to calculate angle separation.
 PARAMETER gKSCSync IS FALSE. //set true to have this satellite sit above KSC
@@ -15,12 +16,35 @@ SET TVAL TO 0.
 SET SVAL TO PROGRADE.
 LOCK THROTTLE TO TVAL.
 LOCK STEERING TO SVAL.
-SET T2Node TO 0.
+SET T2Node TO 100.
 
 //Maneuver Planning
+//SET MyOrbPer Orbital Period
+//SET TgOrbPer Period
+//SET MyAngVel Angular Velocity
+//SET TgAngVel Angular Velocity
+//SET MyAngPos Position (Angular)
+//SET TgAngPos Position (Angular)
+//CALC TrObtPer Transfer Orbit Period (Kepler????)
+//CALC TrAngDelta = TrObtPer*TgAngVel Angle Covered by the Tg during Transfert
+//CALC PhaseAngle = TgAngPos-MyAngPos. [0...360]
 
-SET TARGET TO gTarget.
-
+FUNCTION Trans_Calc {
+	IF (gTarget <> "None") {
+		SET TARGET TO gTarget.
+		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + TARGET:ALTITUDE)/2.
+		SET A2 TO TARGET:OBT:SEMIMAJORAXIS.
+		SET T2 TO TARGET:OBT:PERIOD.
+		SET gOrbit TO TARGET:OBT:APOAPSIS.
+	} ELSE {
+		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + gOrbit)/2.
+		SET A2 TO SHIP:OBT:BODY:RADIUS + gOrbit.
+		SET T2 TO MAN_OrbT(A2).
+	}
+	SET T1 TO T2 * (A1/A2)^1.5.
+	SET anAlpha TO MOD(180*(T1/T2), 360).
+	SET TransAng TO 360-anAlpha.
+}
 //TODO: Add Satellite Network Positioning, can just do Beta = (360/gSatTot)*gSatNum
 //TODO: Add Satellite Virtual Position, to fine tune the orbit (Similar to Docking)
 
@@ -29,18 +53,16 @@ CLEARSCREEN.
 SET tSpacer TO "              ".
 UNTIL mode = 0 {
 	IF mode = 1 {
-		SET mode TO 2.
-      LOCAL A1 IS BODY:RADIUS + (SHIP:ALTITUDE + TARGET:ALTITUDE)/2.
-      LOCAL A2 IS TARGET:OBT:SEMIMAJORAXIS.
-      LOCAL T1 IS T2 * (A1/A2)^1.5.
-      LOCAL T2 IS TARGET:OBT:PERIOD.
-      LOCAL alpha IS MOD(180*(T1/T2), 360).
-      LOCAL transferAngle IS 360-alpha.
+	  SET mode TO 2.
+	  Trans_Calc().
+	  SET tDeltaV TO MAN_DV(SHIP:APOAPSIS,gOrbit).
+	  SET tBTime TO MAN_BTime(MAN_ISP(),tDeltaV).
+	  SET tT2B TO tBTime*0.50.
 	}
 	IF mode = 2 { // Warpo to Position
 		SET TempTime TO T2Node-tT2B.
-		IF (WARP = 0 AND TempTime > 50+tBTime) {SET WARP TO 3.}
-		ELSE IF (WARP > 0 AND TempTime <= 50+tBTime) {SET WARP TO 0.}
+//		IF (WARP = 0 AND TempTime > 50+tBTime) {SET WARP TO 3.}
+//		ELSE IF (WARP > 0 AND TempTime <= 50+tBTime) {SET WARP TO 0.}
 		IF (TempTime  <= 30+tBTime) {
 			IF (gCircPe) {
 				SET mode TO 4.
@@ -79,12 +101,18 @@ UNTIL mode = 0 {
 		wait 5.
 	}
 
-	print "Scola-Sys - Circularization (RM:"+mode+") "+SHIP:STATUS+tSpacer AT (3,2).
+	print "Scola-Sys - Intercept (RM:"+mode+") "+SHIP:STATUS+tSpacer AT (3,2).
 	print "Target Orbit: "+ROUND(gOrbit/1000,0)+" km [Pe:"+gCircPe+"]"+tSpacer AT (3,3).
-	print "ApH: " + ROUND(APOAPSIS/1000, 1) + " km"+tSpacer AT (3,4).
-	print "PeH: " + ROUND(PERIAPSIS/1000, 1) + " km"+tSpacer AT (18,4).
-	print "ApE: " + ROUND(ETA:APOAPSIS,0) + " s"+tSpacer AT (3,5).
-	print "PeE: " + ROUND(ETA:PERIAPSIS,0) + " s"+tSpacer AT (18,5).
-	print "DeV: " + ROUND(tDeltaV,1) + " m/s2"+tSpacer AT (3,7).
-	print "BrE: " + -1*ROUND(T2Node-tT2B)+" s"+tSpacer AT (18,7).
+	print "ApH: " + ROUND(APOAPSIS/1000, 1) + " km"+tSpacer AT (3,5).
+	print "PeH: " + ROUND(PERIAPSIS/1000, 1) + " km"+tSpacer AT (18,5).
+	print "ApE: " + ROUND(ETA:APOAPSIS,0) + " s"+tSpacer AT (3,6).
+	print "PeE: " + ROUND(ETA:PERIAPSIS,0) + " s"+tSpacer AT (18,6).
+	print "oA1: " + ROUND(A1/1000,1) + " km"+tSpacer AT (3,7).
+	print "oT1: " + ROUND(T1,0) + " s"+tSpacer AT (18,7).
+	print "oA2: " + ROUND(A2/1000,1) + " km"+tSpacer AT (3,8).
+	print "oT2: " + ROUND(T2,0) + " s"+tSpacer AT (18,8).
+	print "TAn: " + ROUND(TransAng,1) + " °"+tSpacer AT (3,9).
+
+	print "DeV: " + ROUND(tDeltaV,1) + " m/s2"+tSpacer AT (3,15).
+	print "BrE: " + -1*ROUND(T2Node-tT2B)+" s"+tSpacer AT (18,15).
 }

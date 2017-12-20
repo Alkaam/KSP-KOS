@@ -15,6 +15,13 @@ FUNCTION MAN_ISP { //calculates the average isp of all of the active engines on 
     RETURN (totalThrust / totalFlow).
 }
 
+FUNCTION MAN_OrbT {
+	PARAMETER SMA.
+	LOCAL tPi IS CONSTANT:PI.
+	LOCAL u IS SHIP:OBT:BODY:MU.
+	RETURN 2*tPi*SQRT((SMA^3)/u).
+}
+
 FUNCTION MAN_BTime {    //from isp and dv calculates the amount of time needed for the burn
     PARAMETER ISPs, DV. 
     LOCAL wMass IS SHIP:MASS.
