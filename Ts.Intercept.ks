@@ -7,6 +7,8 @@ PARAMETER gSatNum IS 0. //the Number of the Satellite like in a row of 6 satelli
 PARAMETER gSatTot IS 0. //total number of satellite to calculate angle separation.
 PARAMETER gKSCSync IS FALSE. //set true to have this satellite sit above KSC
 
+set gKSC to latlng(-0.0972092543643722, -74.557706433623).
+
 FUNCTION TARGET_ANGLE {
   PARAMETER target.
   RETURN MOD(LNG_TO_DEGREES(ORBITABLE(target):LONGITUDE),- LNG_TO_DEGREES(SHIP:LONGITUDE) + 360,360).
@@ -25,17 +27,21 @@ SET T2Node TO 100.
 		SET A2 TO TARGET:OBT:SEMIMAJORAXIS.
 		SET T2 TO TARGET:OBT:PERIOD.
 		SET gOrbit TO TARGET:OBT:APOAPSIS.
+		SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
+		SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
+		SET PhaseAngle = MATH_PhaseAng(). //[0...360].
+		SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
 	} ELSE {
 		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + gOrbit)/2.
 		SET A2 TO SHIP:OBT:BODY:RADIUS + gOrbit.
 		SET T2 TO MAN_OrbT(A2).
+		SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
+		SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
+		SET PhaseAngle = MATH_PhaseAng(). //[0...360].
+		SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
 	}
 	SET T1 TO T2 * (A1/A2)^1.5.
 
-SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
-SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
-SET PhaseAngle = MATH_PhaseAng(). //[0...360].
-SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
 
 
 
