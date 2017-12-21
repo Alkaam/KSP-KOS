@@ -14,6 +14,16 @@ FUNCTION TARGET_ANGLE {
   RETURN MOD(LNG_TO_DEGREES(ORBITABLE(target):LONGITUDE),- LNG_TO_DEGREES(SHIP:LONGITUDE) + 360,360).
 }
 
+FUNCTION MATH_PhaseAng {
+	PARAMETER fAng2 IS TARGET:OBT:LAN+TARGET:OBT:ARGUMENTOFPERIAPSIS+TARGET:OBT:TRUEANOMALY. //target angle
+	PARAMETER fAng1 IS OBT:LAN+OBT:ARGUMENTOFPERIAPSIS+OBT:TRUEANOMALY. //the ships angle to universal reference direction.
+	SET fRet TO fAng2-fAng1.
+	SET fRet TO fRet - 360*floor(fRet/360). //normalization
+	RETURN fRet.
+}
+
+RCS OFF.
+SAS OFF.
 SET TVAL TO 0.
 SET SVAL TO PROGRADE.
 LOCK THROTTLE TO TVAL.
@@ -29,16 +39,21 @@ SET T2Node TO 100.
 		SET gOrbit TO TARGET:OBT:APOAPSIS.
 		SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
 		SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
-		SET PhaseAngle = MATH_PhaseAng(). //[0...360].
+		SET PhaseAngle TO MATH_PhaseAng(). //[0...360].
 		SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
 	} ELSE {
 		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + gOrbit)/2.
 		SET A2 TO SHIP:OBT:BODY:RADIUS + gOrbit.
 		SET T2 TO MAN_OrbT(A2).
 		SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
-		SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
-		SET PhaseAngle = MATH_PhaseAng(). //[0...360].
-		SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
+		SET BrAngPhase TO 180-(360*TrObtPhase). //Angular Distance Between My and Tg at the BurnPoint
+		IF (gKSCSync) {
+			SET PhaseAngle TO MATH_PhaseAng(BODY:ROTATIONANGLE). //[0...360].
+		} ELSE {
+			SET PhaseAngle TO MATH_PhaseAng(0). //[0...360].
+		}
+		SET BrTime TO ((360/MAN_OrbT(A2)) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
+		SET T2Node TO TIME:SECONDS + BrTime.
 	}
 	SET T1 TO T2 * (A1/A2)^1.5.
 
@@ -67,10 +82,10 @@ UNTIL mode = 0 {
 //		ELSE IF (WARP > 0 AND TempTime <= 50+tBTime) {SET WARP TO 0.}
 		IF (TempTime  <= 30+tBTime) {
 			IF (gCircPe) {
-				SET mode TO 4.
+				SET mode TO 2.
 				LOCK SVAL TO RETROGRADE.
 			} ELSE {
-				SET mode TO 3.
+				SET mode TO 2.
 				LOCK SVAL TO PROGRADE.
 			}
 		}
@@ -104,7 +119,7 @@ UNTIL mode = 0 {
 	}
 
 	print "Scola-Sys - Intercept (RM:"+mode+") "+SHIP:STATUS+tSpacer AT (3,2).
-	print "Target Orbit: "+ROUND(gOrbit/1000,0)+" km [Pe:"+gCircPe+"]"+tSpacer AT (3,3).
+	print "Target Orbit: "+ROUND(gOrbit/1000,0)+" km [KSC:"+gKSCSync+"]"+tSpacer AT (3,3).
 	print "ApH: " + ROUND(APOAPSIS/1000, 1) + " km"+tSpacer AT (3,5).
 	print "PeH: " + ROUND(PERIAPSIS/1000, 1) + " km"+tSpacer AT (18,5).
 	print "ApE: " + ROUND(ETA:APOAPSIS,0) + " s"+tSpacer AT (3,6).
@@ -113,7 +128,6 @@ UNTIL mode = 0 {
 	print "oT1: " + ROUND(T1,0) + " s"+tSpacer AT (18,7).
 	print "oA2: " + ROUND(A2/1000,1) + " km"+tSpacer AT (3,8).
 	print "oT2: " + ROUND(T2,0) + " s"+tSpacer AT (18,8).
-	print "TAn: " + ROUND(TransAng,1) + " °"+tSpacer AT (3,9).
 
 	print "DeV: " + ROUND(tDeltaV,1) + " m/s2"+tSpacer AT (3,15).
 	print "BrE: " + -1*ROUND(T2Node-tT2B)+" s"+tSpacer AT (18,15).
