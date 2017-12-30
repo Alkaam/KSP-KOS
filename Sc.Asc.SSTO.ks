@@ -59,12 +59,22 @@ until mode = 0 {
 	else if mode = 2{ // gravity turn
 		SET TVAL TO 1.
 		SET SVAL TO HEADING(90,10).
-		if (SALT > 200 AND HSI > 350) { set mode to 3.}
+		if (SALT > 200 AND HSI > 300) { set mode to 3.}
 	}
 	else if mode = 3{ // Gravity Turn Step 1/3
-		SET tPtc TO MIN(20,25*(VELOCITY:ORBIT:MAG/1500)).
+		SET tPtc TO MIN(25,25*(VELOCITY:ORBIT:MAG/1400)).
 		SET SVAL TO heading (90, tPtc).
 		if (SALT > 22000) {AG1 ON. SET mode TO 4.}
+	}
+	else if mode = 15{ // Gravity Turn Step 1/3
+		SET tPtc TO MIN(25,30*(HSI/400)).
+		SET SVAL TO heading (90, tPtc).
+		if (SALT > 9000) {SET mode TO 16.}
+	}
+	else if mode = 16{ // Gravity Turn Step 1/3
+		SET tPtc TO MAX(6,MIN(25,30*(1-SALT/18000))).
+		SET SVAL TO heading (90, tPtc).
+		if (SALT > 18000 AND VELOCITY:ORBIT:MAG > 1600) {SET mode TO 16.}
 	}
 	else if mode = 4{ // Gravity Turn Step 2/3
 		IF (SHIP:APOAPSIS < 40000) {
