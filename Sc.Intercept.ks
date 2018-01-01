@@ -4,7 +4,7 @@
 PARAMETER gOrbit IS 2863330.
 PARAMETER gTarget IS "None".
 PARAMETER gSatNum IS 0. //the Number of the Satellite like in a row of 6 satellite, this is the 3
-PARAMETER gSatTot IS 0. //total number of satellite to calculate angle separation.
+PARAMETER gSatTot IS 1. //total number of satellite to calculate angle separation.
 PARAMETER gKSCSync IS FALSE. //set true to have this satellite sit above KSC
 
 set gKSC to latlng(-0.0972092543643722, -74.557706433623).
@@ -18,7 +18,7 @@ FUNCTION MATH_PhaseAng {
 	PARAMETER fAng2 IS TARGET:OBT:LAN+TARGET:OBT:ARGUMENTOFPERIAPSIS+TARGET:OBT:TRUEANOMALY. //target angle
 	PARAMETER fAng1 IS OBT:LAN+OBT:ARGUMENTOFPERIAPSIS+OBT:TRUEANOMALY. //the ships angle to universal reference direction.
 	SET fRet TO fAng2-fAng1.
-	SET fRet TO fRet - 360*floor(fRet/360). //normalization
+	SET fRet TO MATH_AngNorm(fRet). //normalization
 	RETURN fRet.
 }
 
@@ -43,9 +43,9 @@ SET T2Node TO 100.
 		SET T2 TO TARGET:OBT:PERIOD.
 		SET gOrbit TO TARGET:OBT:APOAPSIS.
 		SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
-		SET BrAngPhase TO 180-(360*TrOrbPhase). //Angular Distance Between My and Tg at the BurnPoint
-		SET PhaseAngle TO MATH_PhaseAng(). //[0...360].
-		SET BrTime TO ((360/TARGET:OBT:PERIOD) - (360/SHIP:OBT:PERIOD))/(PhaseAngle-BrAngPhase). //Calculate How much time needed to Wait Before the Burn.
+		SET BrAngPhase TO 180-(360*TrObtPhase). //Angular Distance Between My and Tg at the BurnPoint
+		SET PhaseAngle TO MATH_PhaseAng()+((360/gSatTot)*gSatNum). //[0...360].
+		SET BrTime TO (PhaseAngle-BrAngPhase)/((360/SHIP:OBT:PERIOD)-(360/TARGET:OBT:PERIOD)). //Calculate How much time needed to Wait Before the Burn.
 	} ELSE {
 		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + gOrbit)/2.
 		SET A2 TO SHIP:OBT:BODY:RADIUS + gOrbit.
@@ -58,8 +58,8 @@ SET T2Node TO 100.
 			SET PhaseAngle TO MATH_PhaseAng(0). //[0...360].
 		}
 		SET BrTime TO (MATH_AngNorm(PhaseAngle-BrAngPhase))/((360/SHIP:OBT:PERIOD)-(360/T2)). //Calculate How much time needed to Wait Before the Burn.
-		SET T2Node TO TIME:SECONDS + BrTime.
 	}
+	SET T2Node TO TIME:SECONDS + BrTime.
 	SET T1 TO T2 * (A1/A2)^1.5.
 
 

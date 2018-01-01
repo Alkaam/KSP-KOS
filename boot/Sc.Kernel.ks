@@ -23,15 +23,16 @@ FUNCTION fDebug {
 	}
 }
 
-IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PREFLIGHT" OR gDebug) {
+fPrKer("Ship STATUS: "+SHIP:STATUS).
+fPrKer("KSC-Conn: "+ADDONS:RT:HASKSCCONNECTION(SHIP)).
+fPrKer("REL-Conn: "+ADDONS:RT:HASCONNECTION(SHIP)).
+fDebug("DBG-Mode: ENABLED!").
+
+IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
 	COPYPATH("0:/libs/LibFile.ks","").
 	RUNONCEPATH("LibFile.ks").
 	SET gUpdate TO FALSE.
 	SET gMission TO HAS_FILE(gMissFile,1).
-	fPrKer("Ship on "+SHIP:STATUS+" Status").
-	fPrKer("KSC Connection: "+ADDONS:RT:HASKSCCONNECTION(SHIP)).
-	fPrKer("RELAY Connection: "+ADDONS:RT:HASCONNECTION(SHIP)).
-	fDebug("Debug Mode ENABLED!").
 	SET gUpdate TO fDownload(gUpdFile).
 	if (NOT gUpdate AND NOT gMission) {
 		SET gMission TO fDownload(gMissFile).
