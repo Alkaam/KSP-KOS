@@ -45,7 +45,7 @@ UNTIL mode = 0 {
 			SET mode TO 20.
 		} ELSE IF (TempTime <= 0 AND TVAL = 0) {
 			SET TVAL TO 1.
-		} ELSE IF (ETA:APOAPSIS > 100) {
+		} ELSE IF (ETA:APOAPSIS > 100 AND ETA:APOAPSIS < SHIP:OBT:PERIOD - 100) {
 			SET TVAL TO 0.
 			SET mode TO 1.
 		}
