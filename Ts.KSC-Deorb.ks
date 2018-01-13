@@ -4,6 +4,9 @@ PARAMETER gKSCSync IS FALSE. //set TRUE if you want Try Descent on KSC
 PARAMETER gPwrLnd IS FALSE. //set TRUE perform Power Descent
 
 set gKSC to latlng(-0.0972092543643722, -74.557706433623).
+// ###### CHECK ATMOSPHERE ######
+SET gAtm TO BODY:ATM:EXISTS.
+SET gAtmH TO BODY:ATM:HEIGHT.
 
 FUNCTION MATH_PhaseAng {
 	PARAMETER fAng2 IS TARGET:OBT:LAN+TARGET:OBT:ARGUMENTOFPERIAPSIS+TARGET:OBT:TRUEANOMALY. //target angle
@@ -17,29 +20,39 @@ FUNCTION MATH_AngNorm {
 	PARAMETER fAng.
 	RETURN fAng - 360*FLOOR(fAng/360).
 }
-
-RCS OFF.
-SAS OFF.
+// ###### SET UP THROTTLE AND STEERING ######
 SET TVAL TO 0.
 SET SVAL TO RETROGRADE.
 LOCK THROTTLE TO TVAL.
 LOCK STEERING TO SVAL.
-SET T2Node TO 100.
+SET T2Node TO 0.
+// ###### SET UP VESSEL ######
+SAS OFF.
+RCS OFF.
+LIGHTS OFF.
+GEAR OFF.
 
 //Maneuver Planning
-
 SET mode TO 1.
+IF SHIP:STATUS = "ORBITING" { SET MODE TO 1. }
+IF SHIP:STATUS = "SUB_ORBITAL" { SET MODE TO 4. }
+IF SHIP:STATUS = "FLYING" { SET MODE TO 5. }
+
 CLEARSCREEN.
+
+SET stopDist TO 0.
 SET tSpacer TO "              ".
 UNTIL mode = 0 {
 	IF mode = 1 {
 		IF (gKSCSync) {
-			SET PhaseAngle TO MATH_PhaseAng(BODY:ROTATIONANGLE-74)+277. //[0...360].
+			SET PhaseAngle TO MATH_PhaseAng(BODY:ROTATIONANGLE-74)+277.5. //[0...360].
 			SET BrTime TO PhaseAngle/((360/SHIP:OBT:PERIOD)-(360/BODY:ROTATIONPERIOD)). //Calculate How much time needed to Wait Before the Burn.
 			SET T2Node TO TIME:SECONDS + BrTime.
+			LOCK TempTime TO -1*(TIME:SECONDS-T2Node).
+			SET mode TO 2.
+		} ELSE {
+			SET mode TO 3.
 		}
-		SET mode TO 2.
-		LOCK TempTime TO -1*(TIME:SECONDS-T2Node).
 	}
 	IF mode = 2 { // Warpo to Position
 		IF (WARP = 0 AND TempTime >= 70) {SET WARP TO 3.}
@@ -50,7 +63,7 @@ UNTIL mode = 0 {
 		}
 	} ELSE IF mode = 3 { // Deorbit
 		IF (SHIP:PERIAPSIS <= -20000) {
-			IF (gKSCSync) {SET mode TO 4.}
+			IF (gPwrLnd) {SET mode TO 4.} ELSE {SET mode TO 19.}
 			SET TVAL TO 0.
 			WAIT 2.
 			STAGE.
@@ -59,38 +72,42 @@ UNTIL mode = 0 {
 			SET TVAL TO 1.
 		}
 	} ELSE IF mode = 4 { // POWER Descent Brakes.
+		RCS ON.
 		IF (WARP = 0 AND ALTITUDE > 50000) {SET WARP TO 3.}
 		ELSE IF (WARP > 0 AND ALTITUDE <= 30000) {SET WARP TO 0.}
 		IF (ALTITUDE <= 45000) {
 			LOCK STEERING TO SHIP:SRFRETROGRADE.
 			IF (ALTITUDE <= 40000 AND AIRSPEED > 1500) {SET TVAL TO 1.}
 			ELSE IF (ALTITUDE <= 20000 AND AIRSPEED > 1000) {SET TVAL TO 1.}
-			ELSE IF (ALTITUDE <= 10000 AND AIRSPEED > 500) {SET TVAL TO 1.}
+			ELSE IF (ALTITUDE <= 15000 AND AIRSPEED > 750) {SET TVAL TO 1.}
 			ELSE {SET TVAL TO 0.}
 		}
-		IF (ALT:RADAR <= 5000) {SET mode TO 5.}
-	} ELSE IF mode = 5 { //POWER Descent Landing
-		SET GEAR TO ALT:RADAR <= 500.
-		IF (ALT:RADAR > 200) {
-			SET tVSpd TO (ALT:RADAR*0.10).
+		IF (ALT:RADAR <= 10000) {SET mode TO 5.}
+	} ELSE IF (mode = 5) { //POWER Descent Landing
+		SET GEAR TO ALT:RADAR <= 200.
+		IF (ALT:RADAR < 50) {
+			SET STEERING TO HEADING(90,90).
 		} ELSE {
-			SET tVSpd TO 1.0.
-			SET STEERING TO UP.
+			SET STEERING TO SRFRETROGRADE.
 		}
-		SET tDVNow TO (VERTICALSPEED*-1)-tVSpd.
-		SET tTWRErr TO tDVNow/200.
-		SET tTWR TO (1/fTWR())+tTWRErr*1.80.
-		SET TVAL TO MAX(0,MIN(1,tTWR)).
-	} ELSE IF (mode = 6) {
-		SET GEAR TO ALT:RADAR <= 500.
-		SET SALT TO ALT:RADAR-10.
-		SET maxDecel to (SHIP:AVAILABLETHRUST / SHIP:MASS) - fGrav().	// Maximum deceleration possible (m/s^2)
-		SET stopDist to SHIP:VERTICALSPEED^2 / (2 * maxDecel).		// The distance the burn will require
-		SET idealThrottle to stopDist / SALT.			// Throttle required for perfect hoverslam
-		SET impactTime to SALT / ABS(SHIP:VERTICALSPEED).		// Time until impact, used for landing gear
-		IF (SALT < stopDist) {SET TVAL TO idealThrottle.}
-		ELSE {SET TVAL TO 0.}
-		IF (ABS(SHIP:VERTICALSPEED) < 0.1) {SET TVAL TO 0. SET mode TO 20.}
+		SET aNeed TO ABS(VERTICALSPEED)/((ALT:RADAR-2)/ABS(VERTICALSPEED)).
+		SET aGive TO fTWR()*fGrav().
+		PRINT "a-Need: " + ROUND(aNeed,2)+" "+tSpacer AT (3,9).
+		PRINT "a-Give: " + ROUND(aGive,2)+" "+tSpacer AT (3,10).
+//		IF (ABS(aNeed-aGive) < 0.50 AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
+//		IF (ROUND(aNeed*0.75,0) > ROUND(aGive,0) AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
+		IF (aNeed/aGive > 1.00 AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
+//		ELSE IF (SHIP:VERTICALSPEED >= -1.0) {SET TVAL TO GEN_TWR2Th(0.95).}
+		ELSE IF (THROTTLE > 0) {SET TVAL TO GEN_TWR2Th((aNeed*1.05)/fGrav).}
+		IF (ABS(SHIP:VERTICALSPEED) < 0.2) {SET TVAL TO 0. SET mode TO 20.}
+	} ELSE IF (mode = 19) { // Descent
+		IF (ALT:RADAR < 500) {
+			SET mode TO 20.
+		} ELSE IF (ALT:RADAR < 32500) {
+			SET STEERING TO SRFRETROGRADE.
+		} ELSE {
+			SET STEERING TO RETROGRADE.
+		}
 	} ELSE IF (mode = 20) { // SCRIPT END, RELEASE CONTROLS
 		SET TVAL TO 0.
 		UNLOCK STEERING.
@@ -99,24 +116,21 @@ UNTIL mode = 0 {
 		PRINT "Deorbit and Land Complete"+tSpacer AT (3,9).
 		WAIT 5.
 	}
-
+	SET PANELS TO ALT:RADAR > 65000.
 	IF (THROTTLE > 0) {PRINT "#>> BURNING AT "+ROUND(THROTTLE*100,0)+"% <<#"+tSpacer AT (3,0).}
-	ELSE {PRINT tSpacer AT (3,0).}
+	ELSE {PRINT tSpacer+tSpacer AT (3,0).}
 	PRINT "Scola-Sys - Deorbit (RM:"+mode+") "+SHIP:STATUS+tSpacer AT (3,2).
 	PRINT "[KSC:"+gKSCSync+"]"+tSpacer AT (3,3).
 	PRINT "ApH: " + ROUND(APOAPSIS/1000, 1) + " km"+tSpacer AT (3,5).
 	PRINT "PeH: " + ROUND(PERIAPSIS/1000, 1) + " km"+tSpacer AT (18,5).
 	PRINT "ApE: " + ROUND(ETA:APOAPSIS,0) + " s"+tSpacer AT (3,6).
 	PRINT "PeE: " + ROUND(ETA:PERIAPSIS,0) + " s"+tSpacer AT (18,6).
-	IF (mode <= 3) {
+	IF (mode > 0 AND mode <= 3) {
 		PRINT "BrA: " + ROUND(PhaseAngle,0) + " deg"+tSpacer AT (3,7).
 		PRINT "BrE: " + ROUND(TIME:SECONDS-T2Node)+" s"+tSpacer AT (18,7).
 	} ELSE IF (mode >= 4) {
-		PRINT "VSI: " + ROUND(VERTICALSPEED,0) + " m/s"+tSpacer AT (3,7).
-		PRINT "HSI: " + ROUND(GROUNDSPEED,0)+" m/s"+tSpacer AT (18,7).
+		PRINT "VSI: " + ROUND(VERTICALSPEED,2) + " m/s"+tSpacer AT (3,7).
+		PRINT "HSI: " + ROUND(GROUNDSPEED,2)+" m/s"+tSpacer AT (18,7).
 		PRINT "ALT: " + ROUND(ALT:RADAR,0)+" m"+tSpacer AT (3,8).
-	}
-	IF (mode = 6) {
-		PRINT "DeM: " + ROUND(maxDecel,0) + " m/s2"+tSpacer AT (18,8).
 	}
 }

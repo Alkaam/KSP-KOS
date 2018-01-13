@@ -27,3 +27,15 @@ FUNCTION GEN_TWR2Th {
 	PARAMETER fPower.
 	RETURN MIN(1.0,MAX(0.0,fPower/fTWR)).
 }
+
+FUNCTION GEN_Log {
+	PARAMETER fText.
+	SET fFileName TO "Log."+SHIP:NAME+".txt".
+	LOG fText TO fFileName.
+}
+
+FUNCTION fTelemetry {
+	PARAMETER fText.
+	SET fFileName TO "Tel."+SHIP:NAME+".CSV".
+	LOG fText TO fFileName.
+}

@@ -60,18 +60,18 @@ until mode = 0 {
 	else if mode = 2{ // ### FLY UP TO SAFETY
 		SET TVAL TO 1.
 		SET SVAL TO SHIP:FACING.
-		if (SALT > 500 AND VSI > 150) { set mode to 3.}
+		if (SALT > 500 AND VSI > 100) { set mode to 3.}
 	}
 	else if mode = 3{ // ### G-Turn UNTIL APOAPSIS IS 35 SEC AHEAD
 		SET TVAL TO GEN_TWR2Th(1.60).
 		SET tPtc TO GEN_TgPitch2(5,gOrbit).
-		SET SVAL TO heading (90, tPtc).
+		SET SVAL TO heading (gHeading, tPtc).
 		if ETA:APOAPSIS > 35 AND SALT >= 35000 { set mode to 5. }
 		ELSE if SHIP:APOAPSIS >= gOrbit { set mode to 6. }
 	}
 	else if mode = 5{ // G-Turn UNTIL APOAPSIS REACH ORBIT HEIGHT
 		SET DiffVelComp TO MIN(0.50,MAX(-0.95,(40-ETA:APOAPSIS)/50)).
-		SET SVAL TO HEADING(90,GEN_TgPitch2(GEN_AngPro(8),gOrbit)).
+		SET SVAL TO HEADING(gHeading,GEN_TgPitch2(GEN_AngPro(8),gOrbit)).
 		SET TVAL TO GEN_TWR2Th(1.2+DiffVelComp).
 		IF (WARP > 0 AND SHIP:APOAPSIS >= gOrbit-5000) {SET WARP TO 0.}
 		IF (SHIP:APOAPSIS >= gOrbit) {
@@ -84,7 +84,7 @@ until mode = 0 {
 		ELSE IF ((70000-SALT)/VSI < 45 AND WARP > 0) {SET WARP TO 0.}
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			SET TVAL TO 0.
-			SET SVAL TO HEADING(90,GEN_AngPro()).
+			SET SVAL TO HEADING(gHeading,GEN_AngPro()).
 		} ELSE {
 			SET TVAL TO 0.20.
 		}
@@ -97,13 +97,31 @@ until mode = 0 {
 		PRINT "Ascent Phase Complete"+tSpacer AT (3,9).
 		WAIT 5.
 	}
-
-	if stage:number > gStageLimit AND maxthrust = 0 {
+if stage:number > 0 {
+    if maxthrust = 0 {
 		LOCK THROTTLE TO 0.
 		WAIT 1.
 		STAGE.
 		WAIT 2.
 		LOCK THROTTLE TO TVAL.
-	}
+    }
+    SET numOut to 0.
+    LIST ENGINES IN engines. 
+    FOR eng IN engines 
+    {
+        IF eng:FLAMEOUT 
+        {
+            SET numOut TO numOut + 1.
+        }
+    }
+    if numOut > 0 { STAGE. }.
+}
+//	if stage:number > gStageLimit AND maxthrust = 0 {
+//		LOCK THROTTLE TO 0.
+//		WAIT 1.
+//		STAGE.
+//		WAIT 2.
+//		LOCK THROTTLE TO TVAL.
+//	}
 
 }

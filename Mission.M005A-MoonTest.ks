@@ -1,12 +1,10 @@
 PRINT "Scola-Sys -> Mission... LOADED".
 
 IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
-	IF (HAS_FILE("Ts.KSC-Deorb.ks",1)) {DELETEPATH("1:/Ts.KSC-Deorb.ks").}
+	IF (HAS_FILE("Ts.MunTrs.ks",1)) {DELETEPATH("1:/Ts.MunTrs.ks").}
 	fDownLib("LibGens.ks",TRUE).
 	fDownLib("LibMan.ks",TRUE).
-	fDownload("Sc.Asc.Rck.ks").
-	fDownload("Sc.Circ.ks").
-	fDownload("Ts.KSC-Deorb.ks").
+	fDownload("Ts.MunTrs.ks").
 }
 
 FUNCTION fMissStage {
@@ -27,12 +25,6 @@ FUNCTION fStaging {
 	LOCK THROTTLE TO TVAL.
 }
 
-IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck.ks",85000).
-}
-IF (SHIP:STATUS = "SUB_ORBITAL") {
-	RUNPATH("Sc.Circ.ks",85000).
-}
 IF (SHIP:STATUS = "ORBITING") {
-	RUNPATH("Ts.KSC-Deorb.ks",TRUE,TRUE).
+	RUNPATH("Ts.MunTrs.ks","Mun").
 }

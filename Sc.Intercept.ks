@@ -45,7 +45,7 @@ SET T2Node TO 100.
 		SET TrObtPhase TO 1/(2*sqrt(A2^3/A1^3)). //Phasing Orbit % of the Target Orbit.
 		SET BrAngPhase TO 180-(360*TrObtPhase). //Angular Distance Between My and Tg at the BurnPoint
 		SET PhaseAngle TO MATH_PhaseAng()+((360/gSatTot)*gSatNum). //[0...360].
-		SET BrTime TO (PhaseAngle-BrAngPhase)/((360/SHIP:OBT:PERIOD)-(360/TARGET:OBT:PERIOD)). //Calculate How much time needed to Wait Before the Burn.
+		SET BrTime TO (MATH_AngNorm(PhaseAngle-BrAngPhase))/((360/SHIP:OBT:PERIOD)-(360/TARGET:OBT:PERIOD)). //Calculate How much time needed to Wait Before the Burn.
 	} ELSE {
 		SET A1 TO SHIP:OBT:BODY:RADIUS + (SHIP:ALTITUDE + gOrbit)/2.
 		SET A2 TO SHIP:OBT:BODY:RADIUS + gOrbit.
