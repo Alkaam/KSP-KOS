@@ -51,6 +51,8 @@ UNTIL mode = 0 {
 			LOCK TempTime TO -1*(TIME:SECONDS-T2Node).
 			SET mode TO 2.
 		} ELSE {
+			SET T2Node TO TIME:SECONDS + 10.
+			LOCK TempTime TO -1*(TIME:SECONDS-T2Node).
 			SET mode TO 3.
 		}
 	}
@@ -62,7 +64,10 @@ UNTIL mode = 0 {
 			LOCK SVAL TO RETROGRADE.
 		}
 	} ELSE IF mode = 3 { // Deorbit
-		IF (SHIP:PERIAPSIS <= -20000) {
+		IF (NOT BODY:ATM:EXISTS AND ABS(GROUNDSPEED) <= 200) {
+			SET mode TO 4.
+			SET TVAL TO 0.
+		} ELSE IF (BODY:ATM:EXISTS AND SHIP:PERIAPSIS <= -20000) {
 			IF (gPwrLnd) {SET mode TO 4.} ELSE {SET mode TO 19.}
 			SET TVAL TO 0.
 			WAIT 2.
@@ -73,8 +78,8 @@ UNTIL mode = 0 {
 		}
 	} ELSE IF mode = 4 { // POWER Descent Brakes.
 		RCS ON.
-		IF (WARP = 0 AND ALTITUDE > 50000) {SET WARP TO 3.}
-		ELSE IF (WARP > 0 AND ALTITUDE <= 30000) {SET WARP TO 0.}
+//		IF (WARP = 0 AND ALTITUDE > 50000) { SET WARP TO 3.}
+//		ELSE IF (WARP > 0 AND ALTITUDE <= 30000) {SET WARP TO 0.}
 		IF (ALTITUDE <= 45000) {
 			LOCK STEERING TO SHIP:SRFRETROGRADE.
 			IF (ALTITUDE <= 40000 AND AIRSPEED > 1500) {SET TVAL TO 1.}
@@ -82,7 +87,10 @@ UNTIL mode = 0 {
 			ELSE IF (ALTITUDE <= 15000 AND AIRSPEED > 750) {SET TVAL TO 1.}
 			ELSE {SET TVAL TO 0.}
 		}
-		IF (ALT:RADAR <= 10000) {SET mode TO 5.}
+		IF (ALT:RADAR <= 10000) {
+			IF (BODY:ATM:EXISTS) {SET mode TO 5.}
+			ELSE {SET mode TO 6.}
+		}
 	} ELSE IF (mode = 5) { //POWER Descent Landing
 		SET GEAR TO ALT:RADAR <= 200.
 		IF (ALT:RADAR < 50) {
@@ -94,10 +102,27 @@ UNTIL mode = 0 {
 		SET aGive TO fTWR()*fGrav().
 		PRINT "a-Need: " + ROUND(aNeed,2)+" "+tSpacer AT (3,9).
 		PRINT "a-Give: " + ROUND(aGive,2)+" "+tSpacer AT (3,10).
-//		IF (ABS(aNeed-aGive) < 0.50 AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
-//		IF (ROUND(aNeed*0.75,0) > ROUND(aGive,0) AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
-		IF (aNeed/aGive > 1.00 AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
-//		ELSE IF (SHIP:VERTICALSPEED >= -1.0) {SET TVAL TO GEN_TWR2Th(0.95).}
+		IF (aNeed/aGive > 1.30 AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
+		ELSE IF (THROTTLE > 0) {SET TVAL TO GEN_TWR2Th((aNeed*1.05)/fGrav).}
+		IF (ABS(SHIP:VERTICALSPEED) < 0.2) {SET TVAL TO 0. SET mode TO 20.}
+	} ELSE IF (mode = 6) { //POWER Descent Landing
+		IF (ALT:RADAR > 7000) {
+			IF (THROTTLE = 0 AND GROUNDSPEED > 300) { SET TVAL TO 1. }
+			ELSE IF (GROUNDSPEED < 150) {SET TVAL TO 0.}
+		} ELSE {SET mode TO 7. SET TVAL TO 0.}
+	} ELSE IF (mode = 7) { //POWER Descent Landing
+		SET GEAR TO ALT:RADAR <= 200.
+		IF (ALT:RADAR < 50) {
+			SET STEERING TO HEADING(90,90).
+		} ELSE {
+			SET STEERING TO SRFRETROGRADE.
+		}
+		SET aNeed TO ABS(VELOCITY:SURFACE:MAG)/((ALT:RADAR-2)/ABS(VELOCITY:SURFACE:MAG)).
+		SET aGive TO fTWR()*fGrav().
+		PRINT "a-Need: " + ROUND(aNeed,2)+" "+tSpacer AT (3,9).
+		PRINT "a-Give: " + ROUND(aGive,2)+" "+tSpacer AT (3,10).
+		IF ((aNeed/aGive) > 1.60 AND THROTTLE = 0) {SET TVAL TO 1. WAIT 1.}
+//		IF (aNeed/aGive < 0.30 AND ALT:RADAR > 1000 AND THROTTLE > 0) {SET TVAL TO 0. WAIT 1.}
 		ELSE IF (THROTTLE > 0) {SET TVAL TO GEN_TWR2Th((aNeed*1.05)/fGrav).}
 		IF (ABS(SHIP:VERTICALSPEED) < 0.2) {SET TVAL TO 0. SET mode TO 20.}
 	} ELSE IF (mode = 19) { // Descent
@@ -126,7 +151,7 @@ UNTIL mode = 0 {
 	PRINT "ApE: " + ROUND(ETA:APOAPSIS,0) + " s"+tSpacer AT (3,6).
 	PRINT "PeE: " + ROUND(ETA:PERIAPSIS,0) + " s"+tSpacer AT (18,6).
 	IF (mode > 0 AND mode <= 3) {
-		PRINT "BrA: " + ROUND(PhaseAngle,0) + " deg"+tSpacer AT (3,7).
+		IF (gKSCSync) { PRINT "BrA: " + ROUND(PhaseAngle,0) + " deg"+tSpacer AT (3,7). }
 		PRINT "BrE: " + ROUND(TIME:SECONDS-T2Node)+" s"+tSpacer AT (18,7).
 	} ELSE IF (mode >= 4) {
 		PRINT "VSI: " + ROUND(VERTICALSPEED,2) + " m/s"+tSpacer AT (3,7).

@@ -65,19 +65,25 @@ until mode = 0 {
 	else if mode = 2{ // ### FLY UP TO SAFETY
 		SET TVAL TO 1.
 		SET SVAL TO SHIP:FACING.
-		if (SALT > 500 AND VSI > 100) { set mode to 3.}
+		if (SALT > 300 AND VSI > 50) { set mode to 3.}
 	}
 	else if mode = 3{ // ### G-Turn UNTIL APOAPSIS IS 35 SEC AHEAD
-		SET TVAL TO GEN_TWR2Th(1.60).
-		SET tPtc TO GEN_TgPitch2(5,gOrbit).
+		IF (SALT < 5000 AND VELOCITY:ORBIT:MAG < 500) {SET TVAL TO 1.}
+		ELSE { SET TVAL TO GEN_TWR2Th(1.60). }
+		SET tPtc TO 90*(1-(SHIP:APOAPSIS/gOrbit)^1.15).
 		SET SVAL TO heading (gHeading, tPtc).
-		if ETA:APOAPSIS > 35 AND SALT >= 35000 { set mode to 5. }
-		ELSE if SHIP:APOAPSIS >= gOrbit { set mode to 6. }
+		if ETA:APOAPSIS > 35 AND SHIP:APOAPSIS >= gOrbit*0.85 { set mode to 5. }
 	}
 	else if mode = 5{ // G-Turn UNTIL APOAPSIS REACH ORBIT HEIGHT
 		SET DiffVelComp TO MIN(0.50,MAX(-0.95,(40-ETA:APOAPSIS)/50)).
-		SET SVAL TO HEADING(gHeading,GEN_TgPitch2(GEN_AngPro(8),gOrbit)).
-		SET TVAL TO GEN_TWR2Th(1.2+DiffVelComp).
+		SET tPtcCorr TO 8*(1-(ETA:APOAPSIS-20)/20).
+		print "Corr: " + round(tPtcCorr, 2)+ " "+tSpacer AT (3,8).
+		SET tPtcCorr TO MAX(0,MIN(8,tPtcCorr)).
+//		IF (ETA:APOAPSIS < 20) {SET tPtc TO GEN_AngPro(2).}
+//		ELSE {SET tPtc TO GEN_AngPro(-6).}
+		SET tPtc TO GEN_AngPro(-7)+tPtcCorr.
+		SET SVAL TO heading (gHeading, tPtc).
+		SET TVAL TO GEN_TWR2Th(1.4+DiffVelComp).
 		IF (WARP > 0 AND SHIP:APOAPSIS >= gOrbit-5000) {SET WARP TO 0.}
 		IF (SHIP:APOAPSIS >= gOrbit) {
 			IF (gAtm) {SET mode TO 6.}

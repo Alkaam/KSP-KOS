@@ -5,7 +5,7 @@ IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
 	fDownLib("LibMan.ks",TRUE).
 	fDownload("Sc.Asc.Rck2.ks").
 	fDownload("Sc.Circ.ks").
-	fDownload("Ts.MunTrs.ks").
+	fDownload("Sc.Intercept.ks").
 }
 
 FUNCTION fStaging {
@@ -32,5 +32,8 @@ IF (SHIP:STATUS = "PRELAUNCH") {
 	RUNPATH("Sc.Circ.ks",85000).
 }
 IF (SHIP:STATUS = "ORBITING") {
-	RUNPATH("Ts.MunTrs.ks","Mun").
+	UNTIL (STAGE:NUMBER = 0) { STAGE. WAIT 0.50. }
+	PANELS ON.     //DEPLOY SOLAR PANELS
+	BRAKES ON.     //DEPLOY SOLAR PANELS
+	RUNPATH("Sc.Intercept.ks",2863330,"ComSat-Alpha",4,5).
 }

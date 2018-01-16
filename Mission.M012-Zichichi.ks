@@ -3,7 +3,7 @@ PRINT "Scola-Sys -> Mission... LOADED".
 IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
 	fDownLib("LibGens.ks",TRUE).
 	fDownLib("LibMan.ks",TRUE).
-	fDownload("Sc.Asc.Rck2.ks").
+	fDownload("Sc.Asc.Rck.ks").
 	fDownload("Sc.Circ.ks").
 	fDownload("Ts.MunTrs.ks").
 }
@@ -17,7 +17,7 @@ FUNCTION fStaging {
 }
 
 FUNCTION fMissStage {
-	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER > 2) {
+	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER > 1) {
 		STAGE.
 	}
 	IF (SHIP:ALTITUDE >= 69000 AND STAGE:NUMBER >= 1) {
@@ -28,7 +28,7 @@ FUNCTION fMissStage {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck2.ks",85000).
+	RUNPATH("Sc.Asc.Rck.ks",85000,1).
 	RUNPATH("Sc.Circ.ks",85000).
 }
 IF (SHIP:STATUS = "ORBITING") {

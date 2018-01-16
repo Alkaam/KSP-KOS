@@ -6,21 +6,6 @@ FUNCTION fPrLib {
 	WAIT 0.15.
 }
 
-FUNCTION HAS_FILE {
-  PARAMETER fName.
-  PARAMETER vol.
-  IF (vol = "0" OR vol = "1") {SET vol TO vol+":/".}
-  CD(vol).
-  LIST FILES IN allFiles.
-  FOR file IN allFiles {
-    IF file:NAME = fName {
-      CD("1:/").
-      RETURN TRUE.
-    }
-  }
-  CD("1:/").
-  RETURN FALSE.
-}
 FUNCTION fFormat {
 	PARAMETER fReboot IS FALSE.
 	fPrLib("Fombatting CPU Drive...").

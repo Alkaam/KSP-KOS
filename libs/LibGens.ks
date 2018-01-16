@@ -10,6 +10,12 @@ FUNCTION GEN_AngPro{
 	PARAMETER fCorr IS 0.
 	RETURN (90 - VANG(UP:VECTOR, SHIP:PROGRADE:VECTOR))+fCorr.
 }
+FUNCTION GEN_AngSteer {
+	PARAMETER fPrec IS 0.20.
+	SET VSteer TO VANG(SHIP:FACING:FOREVECTOR, STEERING:FOREVECTOR). //vang(ship:facing:forevector,vector)
+	IF (VSteer > 180) {SET VSteer TO VSteer-360.}
+	IF (ABS(VSteer) <= fPrec) { RETURN TRUE. } ELSE { RETURN FALSE. }
+}
 FUNCTION GEN_TgPitch {
 	PARAMETER fMinPitch.
 	PARAMETER fStartAngle.
