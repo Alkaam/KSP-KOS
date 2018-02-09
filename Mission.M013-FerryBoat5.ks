@@ -5,7 +5,7 @@ IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
 	fDownLib("LibMan.ks",TRUE).
 	fDownload("Sc.Asc.Rck2.ks").
 	fDownload("Sc.Circ.ks").
-	fDownload("Ts.KSC-Deorb.ks").
+	fDownload("Ts.MunTrs.ks").
 }
 
 FUNCTION fStaging {
@@ -17,8 +17,8 @@ FUNCTION fStaging {
 }
 
 FUNCTION fMissStage {
-	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER > 1) {
-		STAGE.
+	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER > 2) {
+		fStaging().
 	}
 	IF (SHIP:ALTITUDE >= 69000 AND STAGE:NUMBER >= 1) {
 		PANELS ON.     //DEPLOY SOLAR PANELS
@@ -29,10 +29,8 @@ FUNCTION fMissStage {
 
 IF (SHIP:STATUS = "PRELAUNCH") {
 	RUNPATH("Sc.Asc.Rck2.ks",85000).
-}
-IF (SHIP:STATUS = "SUB_ORBITAL") {
 	RUNPATH("Sc.Circ.ks",85000).
 }
 IF (SHIP:STATUS = "ORBITING") {
-	RUNPATH("Ts.KSC-Deorb.ks",TRUE).
+	RUNPATH("Ts.MunTrs.ks","Mun").
 }

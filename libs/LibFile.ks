@@ -19,6 +19,21 @@ FUNCTION fFormat {
 	}
 	IF (fReboot) {WAIT 2. REBOOT.}
 }
+FUNCTION HAS_FILE {
+  PARAMETER fName.
+  PARAMETER vol.
+  IF (vol = "0" OR vol = "1") { SET vol TO vol+":/". }
+  CD(vol).
+  LIST FILES IN allFiles.
+  FOR file IN allFiles {
+    IF file:NAME = fName {
+      CD("1:/").
+      RETURN TRUE.
+    }
+  }
+  CD("1:/").
+  RETURN FALSE.
+}
 FUNCTION fDownload {
   PARAMETER fName.
   PARAMETER fRun is FALSE.

@@ -1,11 +1,14 @@
 PRINT "Scola-Sys -> Mission... LOADED".
 
 IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
+	if (HAS_FILE("Ts.Docking.ks",1)) {DELETEPATH("1:/Ts.Docking.ks").}
 	fDownLib("LibGens.ks",TRUE).
+	fDownLib("LibMath.ks",TRUE).
 	fDownLib("LibMan.ks",TRUE).
+	fDownLib("LibRCS.ks",TRUE).
 	fDownload("Sc.Asc.Rck2.ks").
 	fDownload("Sc.Circ.ks").
-	fDownload("Ts.KSC-Deorb.ks").
+	fDownload("Ts.Docking.ks").
 }
 
 FUNCTION fStaging {
@@ -17,9 +20,6 @@ FUNCTION fStaging {
 }
 
 FUNCTION fMissStage {
-	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER > 1) {
-		STAGE.
-	}
 	IF (SHIP:ALTITUDE >= 69000 AND STAGE:NUMBER >= 1) {
 		PANELS ON.     //DEPLOY SOLAR PANELS
 		LIGHTS ON.
@@ -28,11 +28,11 @@ FUNCTION fMissStage {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck2.ks",85000).
-}
-IF (SHIP:STATUS = "SUB_ORBITAL") {
-	RUNPATH("Sc.Circ.ks",85000).
+	RUNPATH("Sc.Asc.Rck2.ks",90000).
+	RUNPATH("Sc.Circ.ks",90000).
 }
 IF (SHIP:STATUS = "ORBITING") {
-	RUNPATH("Ts.KSC-Deorb.ks",TRUE).
+	IF (SHIP:ALTITUDE <= 100000) {
+		RUNPATH("Ts.Docking.ks",400000,"KSS-Aissela").
+	}
 }

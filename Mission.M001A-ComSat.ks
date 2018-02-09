@@ -4,9 +4,10 @@ IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PREFLIGHT" OR gDebug) {
 	IF (HAS_FILE("Ts.Intercept.ks",1)) {DELETEPATH("1:/Ts.Intercept.ks").}
 	fDownLib("LibGens.ks",TRUE).
 	fDownLib("LibMan.ks",TRUE).
-	fDownload("Sc.Asc.Rck.ks").
+	fDownload("Sc.Asc.Rck2.ks").
 	fDownload("Sc.Circ.ks").
-	fDownload("Ts.Intercept.ks").
+	fDownload("Ts.MunTrs.ks").
+	fDownload("Sc.Intercept.ks").
 }
 
 FUNCTION fMissStage {
@@ -28,11 +29,12 @@ FUNCTION fStaging {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck.ks",85000).
+	RUNPATH("Sc.Asc.Rck2.ks",85000).
 }
 IF (SHIP:STATUS = "SUB_ORBITAL") {
 	RUNPATH("Sc.Circ.ks",85000).
 }
 IF (SHIP:STATUS = "ORBITING") {
-	RUNPATH("Ts.Intercept.ks",2863330,"KSR-Sat-Alpha",4,5,TRUE).
+	RUNPATH("Ts.MunTrs.ks","Mun",FALSE,1997330).
+	RUNPATH("Sc.Intercept.ks",1997330,"NONE",0,0,TRUE).
 }

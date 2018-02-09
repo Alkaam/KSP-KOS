@@ -68,7 +68,7 @@ until mode = 0 {
 		if (SALT > 300 AND VSI > 50) { set mode to 3.}
 	}
 	else if mode = 3{ // ### G-Turn UNTIL APOAPSIS IS 35 SEC AHEAD
-		IF (SALT < 5000 AND VELOCITY:ORBIT:MAG < 500) {SET TVAL TO 1.}
+		IF (SALT < 5000 AND VELOCITY:ORBIT:MAG < 300) {SET TVAL TO 1.}
 		ELSE { SET TVAL TO GEN_TWR2Th(1.60). }
 		SET tPtc TO 90*(1-(SHIP:APOAPSIS/gOrbit)^1.15).
 		SET SVAL TO heading (gHeading, tPtc).

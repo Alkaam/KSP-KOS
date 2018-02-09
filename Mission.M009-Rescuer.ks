@@ -3,7 +3,7 @@ PRINT "Scola-Sys -> Mission... LOADED".
 IF (ADDONS:RT:HASCONNECTION(SHIP) OR SHIP:STATUS = "PRELAUNCH" OR gDebug) {
 	fDownLib("LibGens.ks",TRUE).
 	fDownLib("LibMan.ks",TRUE).
-	fDownload("Sc.Asc.Rck.ks").
+	fDownload("Sc.Asc.Rck2.ks").
 	fDownload("Sc.Circ.ks").
 	fDownload("Ts.KSC-Deorb.ks").
 }
@@ -25,6 +25,6 @@ FUNCTION fMissStage {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck.ks",200000).
-	RUNPATH("Sc.Circ.ks",200000).
+	RUNPATH("Sc.Asc.Rck2.ks",150000).
+	RUNPATH("Sc.Circ.ks",150000).
 }

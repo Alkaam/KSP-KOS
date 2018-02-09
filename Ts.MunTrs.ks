@@ -1,42 +1,12 @@
 // Deorbit Script to Deorbit Vehicles
-
+//"Ts.MunTrs.ks","Mun",FALSE,1997330,TRUE
 PARAMETER gTarget IS FALSE. //set TRUE if you want Try Descent on KSC
 PARAMETER gFreeRet IS FALSE. //set TRUE perform Power Descent
+PARAMETER gOrbit IS 0. //set TRUE perform Power Descent
 // ###### CHECK ATMOSPHERE ######
 SET gAtm TO BODY:ATM:EXISTS.
 SET gAtmH TO BODY:ATM:HEIGHT.
 
-FUNCTION MATH_PhaseAng {
-	PARAMETER fAng2 IS TARGET:OBT:LAN+TARGET:OBT:ARGUMENTOFPERIAPSIS+TARGET:OBT:TRUEANOMALY. //target angle
-	PARAMETER fAng1 IS OBT:LAN+OBT:ARGUMENTOFPERIAPSIS+OBT:TRUEANOMALY. //the ships angle to universal reference direction.
-	SET fRet TO fAng2-fAng1.
-	SET fRet TO MATH_AngNorm(fRet). //normalization
-	RETURN fRet.
-}
-
-FUNCTION MATH_AngNorm {
-	PARAMETER fAng.
-	RETURN fAng - 360*FLOOR(fAng/360).
-}
-
-FUNCTION fWarp {
-	PARAMETER fTime.
-	SET tCorr TO 1.
-	SET tAtm TO BODY:ATM:HEIGHT.
-	IF (tAtm = 0) {SET tAtm TO BODY:RADIUS*0.10.}
-	IF (WARPMODE = "RAILS" AND fTime > 50) { SET tCorr TO WARP-1. }
-	IF (WARPMODE = "PHYSICS" AND ALT:RADAR > tAtm ) {
-		SET WARP TO 0.
-		WAIT 1.
-		SET WARPMODE TO "RAILS".
-	} ELSE IF (WARPMODE = "RAILS" AND ALT:RADAR <= tAtm ) {
-		SET WARP TO 0.
-		WAIT 1.
-		SET WARPMODE TO "PHYSICS".
-	}
-	IF (WARP = 0 AND fTime > 50*tCorr) {SET WARP TO 3.}
-	ELSE IF (WARP > 0 AND fTime <= 50*tCorr) {SET WARP TO 0.}
-}
 // ###### SET UP THROTTLE AND STEERING ######
 SET TVAL TO 0.
 SET SVAL TO RETROGRADE.
@@ -52,6 +22,13 @@ GEAR OFF.
 
 //Maneuver Planning
 SET mode TO 1.
+SET TARGET TO gTarget.
+IF (gOrbit = 0) {
+	IF (TARGET:ATM:HEIGHT > 0) { SET gOrbit TO TARGET:ATM:HEIGHT*1.1. }
+	ELSE { SET gOrbit TO TARGET:RADIUS*0.1. }
+}
+SET gOrbMin TO gOrbit*0.80.
+SET gOrbMax TO gOrbit*1.20.
 CLEARSCREEN.
 SET tStartVel TO 0.
 SET tSpacer TO "              ".
@@ -59,7 +36,6 @@ UNTIL mode = 0 {
 	IF mode = 1 { // CALCULATION FOR MUN TRANSFER
 		IF (WARP > 0) {SET WARP TO 0.}
 		IF (HASNODE) {REMOVE NEXTNODE.}
-		SET TARGET TO gTarget.
 		SET gOrbit TO TARGET:OBT:APOAPSIS.
 		SET BrAngPhase TO 122.5. //Angular Distance Between My and Tg at the BurnPoint (122.37)
 		SET PhaseAngle TO MATH_PhaseAng(). //[0...360].
@@ -86,55 +62,36 @@ UNTIL mode = 0 {
 			SET tBTime TO TIME:SECONDS+(ETA:TRANSITION*0.25).
 			LOCK TempTime TO tBTime-TIME:SECONDS.
 			SET TVAL TO 0.
-			SET mode TO 33.
-		}
-	} ELSE IF (mode = 33) { // SCRIPT END, RELEASE CONTROLS
-		IF (TempTime <= 0 AND THROTTLE = 0) {SET TVAL TO 1.}
-		IF (SHIP:OBT:NEXTPATCH:BODY:NAME = gTarget) {
-			IF (SHIP:OBT:NEXTPATCH:PERIAPSIS < 14000) {
-				SET TVAL TO MAX(0.02,MIN(0.30,1-(SHIP:OBT:NEXTPATCH:PERIAPSIS/14000))).
-			} ELSE { SET TVAL TO 0. SET MODE TO 4.}
+			SET mode TO 4.
 		}
 	} ELSE IF (mode = 4) { // SCRIPT END, RELEASE CONTROLS
+		IF (TempTime <= 0 AND THROTTLE = 0) {SET TVAL TO 1.}
+		IF (SHIP:OBT:NEXTPATCH:BODY:NAME = gTarget) {
+			IF (SHIP:OBT:NEXTPATCH:PERIAPSIS < gOrbMin) {
+				SET TVAL TO MAX(0.02,MIN(0.30,1-(SHIP:OBT:NEXTPATCH:PERIAPSIS/gOrbMin))).
+			} ELSE { SET TVAL TO 0. SET MODE TO 5.}
+		}
+	} ELSE IF (mode = 5) { // SCRIPT END, RELEASE CONTROLS
 		SET STEERING TO SHIP:FACING.
 		fWarp(TempTime).
 		IF (TempTime <= 2) {
-			SET mode TO 55.
+			SET mode TO 6.
 		}
-	} ELSE IF (mode = 55) { // SCRIPT END, RELEASE CONTROLS
+	} ELSE IF (mode = 6) { // SCRIPT END, RELEASE CONTROLS
 		IF (SHIP:OBT:NEXTPATCH:BODY:NAME = gTarget) {
 			SET tNPe TO SHIP:OBT:NEXTPATCH:PERIAPSIS.
 			SET tSec TO 0.
-			IF (tNPe > 30000) {
+			SET tV TO 0.
+			IF (tNPe > gOrbMax) {
 				SET STEERING TO RETROGRADE.
-				SET tV TO 1-(30000/tNPe).
-			} ELSE IF (tNPe < 14000) {
+				SET tV TO 1-(gOrbMax/tNPe).
+			} ELSE IF (tNPe < gOrbMin) {
 				SET STEERING TO PROGRADE.
-				SET tV TO 1-(tNPe/14000).
-			} ELSE IF (tNPe > 14000 AND tNPe <= 30000) { SET TVAL TO 0. SET MODE TO 7.}
+				SET tV TO 1-(tNPe/gOrbMin).
+			} ELSE IF (tNPe > gOrbMin AND tNPe <= gOrbMax) { SET TVAL TO 0. SET MODE TO 7.}
 			IF (GEN_AngSteer()) {SET tSec TO 1.}
 			SET TVAL TO MAX(0.02,MIN(0.30,tV))*tSec.
 		}
-	} ELSE IF (mode = 5) { // SCRIPT END, RELEASE CONTROLS
-		IF (SHIP:OBT:NEXTPATCH:BODY:NAME = gTarget) {
-			IF (SHIP:OBT:NEXTPATCH:PERIAPSIS > 30000) {
-				SET TVAL TO 0.
-				SET mode to 6.
-				LOCK STEERING TO RETROGRADE.
-				WAIT 10.
-			} ELSE IF (SHIP:OBT:NEXTPATCH:PERIAPSIS < 14000) {
-				SET TVAL TO MAX(0.02,MIN(0.30,1-(SHIP:OBT:NEXTPATCH:PERIAPSIS/14000))).
-			} ELSE { SET TVAL TO 0. SET MODE TO 7.}
-		}
-	} ELSE IF (mode = 6) { // SCRIPT END, RELEASE CONTROLS
-			IF (SHIP:OBT:NEXTPATCH:PERIAPSIS < 14000) {
-				SET TVAL TO 0.
-				SET mode to 5.
-				LOCK STEERING TO PROGRADE.
-				WAIT 10.
-			} ELSE IF (SHIP:OBT:NEXTPATCH:PERIAPSIS > 30000) {
-				SET TVAL TO MAX(0.02,MIN(0.30,1-(30000/SHIP:OBT:NEXTPATCH:PERIAPSIS))).
-			} ELSE { SET TVAL TO 0. SET MODE TO 7.}
 	} ELSE IF (mode = 7) { // SCRIPT END, RELEASE CONTROLS
 		fWarp(ETA:PERIAPSIS).
 		IF (ETA:PERIAPSIS <= 30) {
