@@ -3,7 +3,7 @@
 PARAMETER gKSCSync IS FALSE. //set TRUE if you want Try Descent on KSC
 PARAMETER gPwrLnd IS FALSE. //set TRUE perform Power Descent
 
-set gKSC to latlng(-0.0972092543643722, (360-74.557706433623)).
+set gKSC to latlng(-0.0972092543643722, -74.557706433623).
 // ###### CHECK ATMOSPHERE ######
 SET gAtm TO BODY:ATM:EXISTS.
 SET gAtmH TO BODY:ATM:HEIGHT.
@@ -33,8 +33,7 @@ LIGHTS ON.
 GEAR OFF.
 
 //Maneuver Planning
-SET mode TO 1.
-IF SHIP:STATUS = "ORBITING" { SET MODE TO 1. }
+SET mode TO 4.
 IF SHIP:STATUS = "SUB_ORBITAL" { SET MODE TO 4. }
 IF SHIP:STATUS = "FLYING" { SET MODE TO 5. }
 
@@ -43,40 +42,7 @@ CLEARSCREEN.
 SET stopDist TO 0.
 SET tSpacer TO "              ".
 UNTIL mode = 0 {
-	IF mode = 1 {
-		IF (gKSCSync) {
-			SET PhaseAngle TO MATH_PhaseAng(BODY:ROTATIONANGLE-74-81.5). //[0...360].
-			SET BrTime TO PhaseAngle/((360/SHIP:OBT:PERIOD)-(360/BODY:ROTATIONPERIOD)). //Calculate How much time needed to Wait Before the Burn.
-			SET T2Node TO TIME:SECONDS + BrTime.
-			LOCK TempTime TO -1*(TIME:SECONDS-T2Node).
-			SET mode TO 2.
-		} ELSE {
-			SET T2Node TO TIME:SECONDS + 10.
-			LOCK TempTime TO -1*(TIME:SECONDS-T2Node).
-			SET mode TO 3.
-		}
-	}
-	IF mode = 2 { // Warpo to Position
-		IF (WARP = 0 AND TempTime >= 70) {SET WARP TO 3.}
-		ELSE IF (WARP > 0 AND TempTime <= 50) {SET WARP TO 0.}
-		IF (TempTime <= 30) {
-			SET mode TO 3.
-			LOCK SVAL TO RETROGRADE.
-		}
-	} ELSE IF mode = 3 { // Deorbit
-		IF (NOT BODY:ATM:EXISTS AND ABS(GROUNDSPEED) <= 200) {
-			SET mode TO 4.
-			SET TVAL TO 0.
-		} ELSE IF (BODY:ATM:EXISTS AND SHIP:PERIAPSIS <= -20000) {
-			IF (gPwrLnd) {SET mode TO 4.} ELSE {SET mode TO 19.}
-			SET TVAL TO 0.
-			WAIT 2.
-			STAGE.
-			WAIT 2.
-		} ELSE IF (TempTime < 0 AND TVAL = 0) {
-			SET TVAL TO 1.
-		}
-	} ELSE IF mode = 4 { // POWER Descent Brakes.
+	IF mode = 4 { // POWER Descent Brakes.
 		RCS ON.
 //		IF (WARP = 0 AND ALTITUDE > 50000) { SET WARP TO 3.}
 //		ELSE IF (WARP > 0 AND ALTITUDE <= 30000) {SET WARP TO 0.}

@@ -70,20 +70,44 @@ FUNCTION MNV_HOHMANN_DV {
 }
 
 // Execute the next node
-FUNCTION MNV_EXEC_NODE {
-  PARAMETER autoWarp.
-
-  LOCAL n IS NEXTNODE.
-  LOCAL v IS n:BURNVECTOR.
-
-  LOCAL startTime IS TIME:SECONDS + n:ETA - MNV_TIME(v:MAG)/2.
-  LOCK STEERING TO n:BURNVECTOR.
-
-  IF autoWarp { WARPTO(startTime - 30). }
-
-  WAIT UNTIL TIME:SECONDS >= startTime.
-  LOCK THROTTLE TO MIN(MNV_TIME(n:BURNVECTOR:MAG), 1).
-  WAIT UNTIL VDOT(n:BURNVECTOR, v) < 0.
-  LOCK THROTTLE TO 0.
-  UNLOCK STEERING.
+FUNCTION MAN_ExeNode {
+	CLEARSCREEN.
+	LOCAL tNode TO NEXTNODE.
+	LOCAL tBurnETA TO tNode:ETA.
+	LOCAL tBurnDeV TO tNode:DELTAV:MAG.
+	LOCAL tBurnDur TO MAN_BTime(MAN_ISP(),tBurnDeV).
+	LOCAL tBurnVec TO tNode:DELTAV.
+	LOCAL tBurnPrd TO tNode:OBT:PERIOD.
+	LOCAL tBurn TO 1.
+	SAS OFF.
+	RCS ON.
+	SET TVAL TO 0.
+	LOCK THROTTLE TO TVAL.
+	SET SVAL TO tBurnVec.
+	LOCK STEERING TO SVAL.
+	LOCAL tSpacer TO "              ".
+	UNTIL tBurn = 0 {
+		SET tBurnETA TO tNode:ETA.
+		IF (THROTTLE > 0) {PRINT "#>> BURNING AT "+ROUND(THROTTLE*100,0)+"% <<#"+tSpacer AT (3,0).}
+		ELSE {PRINT tSpacer+tSpacer AT (3,0).}
+		PRINT "Scola-Sys - Node Execution (RM:"+tBurn+")"+tSpacer AT (3,2).
+		print "ApH: " + ROUND(apoapsis/1000, 1) + " km"+tSpacer AT (3,4).
+		print "PeH: " + ROUND(periapsis/1000, 1) + " km"+tSpacer AT (18,4).
+		print "ApE: " + ROUND(ETA:apoapsis,0) + " s"+tSpacer AT (3,5).
+		print "PeE: " + ROUND(ETA:periapsis,0) + " s"+tSpacer AT (18,5).
+		PRINT "BrE: " + ROUND(tBurnETA-(tBurnDur*0.50),1) + " s" +tSpacer AT (3,7).
+		PRINT "DeV: " + ROUND(tBurnDeV,1) + " m/s" +tSpacer AT (18,7).
+		IF (tBurn = 1 AND tBurnETA-(tBurnDur*0.50) <=0) {SET tBurn TO 2.}
+		ELSE IF (tBurn = 2) {
+			IF (tBurnPrd*0.99 <= SHIP:OBT:PERIOD AND SHIP:OBT:PERIOD <= tBurnPrd*1.01) {SET TVAL TO 0. SET tBurn TO 3. PRINT "B1S".}
+			ELSE IF (tNode:DELTAV:MAG <= 0.10) {SET TVAL TO 0. SET tBurn TO 3. PRINT "B2S".}
+			ELSE IF (tNode:DELTAV:MAG <= tBurnDeV*0.10) {SET TVAL TO MAX(0.01,tNode:DELTAV:MAG/(tBurnDeV*0.10)).}
+			ELSE {SET TVAL TO 1.}
+			SET tBurnPrd TO tNode:DELTAV:MAG.
+		} ELSE IF (tBurn = 3) {
+			PRINT "<< NODE EXECUTION TERMINATED >>"+tSpacer AT (3,9).
+			SET tBurn TO 0.
+			REMOVE tNode.
+		}
+	}
 }

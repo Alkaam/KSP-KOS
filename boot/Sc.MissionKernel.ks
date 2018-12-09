@@ -5,6 +5,20 @@ SET SHIP:CONTROL:MAINTHROTTLE TO 0.
 SET gUpdFile TO "Update."+SHIPNAME+".ks".
 SET gMissFile TO "Mission."+SHIPNAME+".ks".
 
+FUNCTION fFormat {
+	PARAMETER fReboot IS FALSE.
+	fPrLib("Fombatting CPU Drive...").
+	CD("1:/").
+	LIST FILES IN fFileList.
+	FOR file IN fFileList {
+		IF (file:Name <> "boot") {
+			PRINT "    REM -> "+file:NAME.
+			DELETEPATH("1:/"+file:NAME).
+		}
+	}
+	IF (fReboot) {WAIT 2. REBOOT.}
+}
+
 FUNCTION HAS_FILE {
   PARAMETER fName.
   PARAMETER vol.

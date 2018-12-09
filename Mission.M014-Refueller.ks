@@ -28,11 +28,9 @@ FUNCTION fMissStage {
 }
 
 IF (SHIP:STATUS = "PRELAUNCH") {
-	RUNPATH("Sc.Asc.Rck2.ks",90000).
-	RUNPATH("Sc.Circ.ks",90000).
+	RUNPATH("Sc.Asc.Rck2.ks",200000).
+	RUNPATH("Sc.Circ.ks",200000).
 }
 IF (SHIP:STATUS = "ORBITING") {
-	IF (SHIP:ALTITUDE <= 100000) {
-		RUNPATH("Ts.Docking.ks",400000,"KSS-Aissela").
-	}
+	RUNPATH("Ts.Docking.ks",400000,"KSS-Saphyra").
 }

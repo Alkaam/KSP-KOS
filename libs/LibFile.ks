@@ -6,19 +6,6 @@ FUNCTION fPrLib {
 	WAIT 0.15.
 }
 
-FUNCTION fFormat {
-	PARAMETER fReboot IS FALSE.
-	fPrLib("Fombatting CPU Drive...").
-	CD("1:/").
-	LIST FILES IN fFileList.
-	FOR file IN fFileList {
-		IF (file:Name <> "boot") {
-			PRINT "    REM -> "+file:NAME.
-			DELETEPATH("1:/"+file:NAME).
-		}
-	}
-	IF (fReboot) {WAIT 2. REBOOT.}
-}
 FUNCTION HAS_FILE {
   PARAMETER fName.
   PARAMETER vol.
