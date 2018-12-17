@@ -1,8 +1,8 @@
 PRINT "Scola-Sys -> Mission... LOADED".
 fDownLib("LibGens.ks",TRUE).
 fDownLib("LibMan.ks",TRUE).
-fDownLib("LibMath.ks",TRUE).
-fDownload("Ts.MunTrs.ks").
+fDownload("Sc.Asc.Rck3.ks").
+fDownload("Sc.Circ.ks").
 
 PRINT "Scola-Sys -> System Ready.".
 
@@ -15,21 +15,21 @@ FUNCTION fStaging {
 }
 FUNCTION fMissStage {
 	IF (SHIP:ALTITUDE >= 60000 AND STAGE:NUMBER = 3) {
-		fStaging().
-		Wait 1.
-	}
-	IF (SHIP:ALTITUDE >= 68000 AND STAGE:NUMBER = 2) {
-		Stage.
+		STAGE.
 		Wait 1.
 	}
 	ELSE IF (SHIP:PERIAPSIS >= 25000 AND STAGE:NUMBER = 2) {
 		fStaging().
 	}
 }
-	WHEN SHIP:ALTITUDE >= 75000 THEN {
+	WHEN SHIP:ALTITUDE >= 60000 AND STAGE:NUMBER = 2 THEN {
 		PANELS ON.     //DEPLOY SOLAR PANELS
 		LIGHTS ON.
 		AG10 ON.
 	}
 
-RUNPATH("Ts.MunTrs.ks","R").
+IF (SHIP:STATUS = "PRELAUNCH") {
+	RUNPATH("Sc.Asc.Rck3.ks",110000,0,90).
+	IF (STAGE:NUMBER >= 2) {STAGE.}
+	RUNPATH("Sc.Circ.ks",110000).
+}

@@ -45,7 +45,7 @@ SET tSpacer TO "              ".
 UNTIL mode = 0 {
 	IF mode = 1 {
 		IF (gKSCSync) {
-			SET PhaseAngle TO MATH_PhaseAng(BODY:ROTATIONANGLE-74-81.5). //[0...360].
+			SET PhaseAngle TO MATH_PhaseAng(BODY:ROTATIONANGLE-74-86.5). //[0...360].
 			SET BrTime TO PhaseAngle/((360/SHIP:OBT:PERIOD)-(360/BODY:ROTATIONPERIOD)). //Calculate How much time needed to Wait Before the Burn.
 			SET T2Node TO TIME:SECONDS + BrTime.
 			LOCK TempTime TO -1*(TIME:SECONDS-T2Node).

@@ -1,57 +1,128 @@
+// Transfer to Mun / Optional DI, FRT
+//"Ts.MunTrs.ks",FALSE,5000,0.20.
+PARAMETER gOrbit IS 30000. //Set Desired PE at Encounter
+PARAMETER gPrec IS 0.20. //Set Precition of Peripasis
+SET gOperation TO LEXICON("D","Direct Impact","R","Retrograde","P","Prograde").
+// ###### SET UP THROTTLE AND STEERING ######
 CLEARSCREEN.
-PARAMETER gTgPe IS 35000.
-PARAMETER gAerobrake IS 40000.
-PRINT "Mun-Trs -> Calculation".
-SET TARGET TO "Mun".				// Target the Mun.
-SET mode TO 0.
-SET gActPhase TO MATH_PhaseAng().	// Current Phase Angle
-// Calculate Ejection Burn Angle.
-LOCAL T2 IS MUN:OBT:PERIOD.
-LOCAL A2 IS MUN:OBT:SEMIMAJORAXIS.
-LOCAL A1 IS KERBIN:RADIUS + (SHIP:ALTITUDE + MUN:ALTITUDE)/2.
-LOCAL T1 IS T2 * (A1/A2)^(2/3).
-LOCAL Alpha IS ((T1*0.50)/T2)*360.
-SET gTgPhase TO 360 - Alpha.
-// Calculate Ejection Burn Time.
-SET gPhaseETA TO (MATH_AngNorm(gTgPhase-gActPhase) / MATH_AngSpeed(SHIP:OBT:PERIOD)).
-// Calculate Ejection Burn Duration.
-SET gTrsDV TO MAN_DV(SHIP:APOAPSIS,MUN:OBT:APOAPSIS).
+SET TARGET TO "MUN".
+SET gOrbMin TO MAX(8000,gOrbit*(1-gPrec)).
+SET gOrbMax TO gOrbit*(1+gPrec).
+SET T2Node TO 0.
+SET TVAL TO 0.
+SET SVAL TO PROGRADE.
+LOCK THROTTLE TO TVAL.
+LOCK STEERING TO SVAL.
+SET ModeName TO list("---","Tranfer Complete","Calculation","Rising AP","Rising AP","Adjusting PE","Adjusting PE").
+// ###### SET UP VESSEL ######
+SAS OFF.
+RCS ON.
+LIGHTS ON.
+GEAR OFF.
 
-PRINT "Mun-Trs -> Creating Node".
-SET gMunTrs to NODE( ROUND(TIME:SECONDS+gPhaseETA,1), 0, 0, ROUND(gTrsDV,1)).
-ADD gMunTrs.
-
-PRINT "Mun-Trs -> Adjusting Node".
-SET Adjust TO 1.
-SET tN TO 0.
-UNTIL Adjust = 0 {
-	SET tInc TO MAX(MIN((gTgPe-gMunTrs:OBT:NEXTPATCH:PERIAPSIS)/gTgPe,1),-1)*0.10.
-	PRINT "Inc: " + tInc + "                 " AT (3,7).
-	IF (Adjust = 1 AND gMunTrs:OBT:HASNEXTPATCH) {
-		SET tN TO tN+1.
-		SET gMunTrs:PROGRADE TO gMunTrs:PROGRADE+tInc. WAIT 0.1.
-		IF ((gTgPe*0.90) < gMunTrs:OBT:NEXTPATCH:PERIAPSIS AND gMunTrs:OBT:NEXTPATCH:PERIAPSIS < (gTgPe*1.10)) { SET tN TO -1000. SET Adjust to 2.}
-		ELSE IF (tN >= 50) {SET tN TO 0. SET Adjust TO 2.}
-	} ELSE IF (Adjust = 2 AND gMunTrs:OBT:HASNEXTPATCH) {
-		SET tN TO tN+1.
-		SET gMunTrs:ETA TO gMunTrs:ETA+tInc. WAIT 0.01.
-		IF ((gTgPe*0.99) < gMunTrs:OBT:NEXTPATCH:PERIAPSIS AND gMunTrs:OBT:NEXTPATCH:PERIAPSIS < (gTgPe*1.01)) {SET Adjust to 3.}
-		ELSE IF (tN >= 10) {SET tN TO 0. SET Adjust TO 1.}
-	} ELSE IF (Adjust = 3) {PRINT "Mun-Trs -> Complete!". SET Adjust TO 0.}
-	IF (gMunTrs:DELTAV:MAG >= 950) {PRINT "Mun-Trs -> Overshoot!". REMOVE gMunTrs. SET Adjust TO 1. WAIT 5.}
+FUNCTION MATH_EjAng {
+	LOCAL fActPhase TO MATH_PhaseAng().	// Current Phase Angle
+	LOCAL T2 IS TARGET:OBT:PERIOD.
+	LOCAL A2 IS TARGET:OBT:SEMIMAJORAXIS.
+	LOCAL A1 IS BODY:RADIUS + (SHIP:ALTITUDE + TARGET:ALTITUDE)/2.
+	LOCAL T1 IS T2 * (A1/A2)^(2/3).
+	LOCAL Alpha IS ((T1*0.50)/T2)*360.
+	SET fTgPhase TO 360 - Alpha.
+	SET fPhaseETA TO (MATH_AngNorm(fTgPhase-fActPhase) / MATH_AngSpeed(SHIP:OBT:PERIOD)).
+	SET fTrsDV TO MAN_DV(SHIP:APOAPSIS,TARGET:OBT:APOAPSIS).
+	SET fBurnTime TO MAN_BTime(MAN_ISP(),fTrsDV).
+	RETURN list(fTgPhase,fPhaseETA,fTrsDV,fBurnTime).
 }
-MAN_ExeNode().
-WAIT UNTIL ETA:PERIAPSIS < 180.
-SET gKerTrs to NODE( ETA:PERIAPSIS, 0, 0, 0).
-ADD gKerTrs.
-SET Adjust TO 1.
-SET Adjust TO 1.
-UNTIL Adjust = 0 {
-	SET tInc TO MAX(MIN((gAerobrake-gKerTrs:OBT:NEXTPATCH:PERIAPSIS)/gAerobrake,1),-1)*0.10.
-	PRINT "Inc: " + tInc + "                 " AT (3,7).
-	IF (Adjust = 1 AND gKerTrs:OBT:HASNEXTPATCH) {
-		SET gKerTrs:PROGRADE TO gKerTrs:PROGRADE+tInc. WAIT 0.1.
-		IF ((gAerobrake*0.99) < gKerTrs:OBT:NEXTPATCH:PERIAPSIS AND gKerTrs:OBT:NEXTPATCH:PERIAPSIS < (gAerobrake*1.01)) { SET tN TO -1000. SET Adjust to 2.}
-	} ELSE IF (Adjust = 2) {PRINT "Mun-Trs -> Complete!". SET Adjust TO 0.}
-	IF (gKerTrs:DELTAV:MAG >= 950) {PRINT "Mun-Trs -> Overshoot!". REMOVE gKerTrs. SET Adjust TO 1. WAIT 5.}
+
+//Maneuver Planning
+SET mode TO 2.
+SET tStartVel TO 0.
+SET tSpacer TO "              ".
+UNTIL mode = 0 {
+	IF mode = 2 { // CALCULATION FOR MUN TRANSFER
+		IF (WARP > 0) {SET WARP TO 0.}
+		SET tEjData TO MATH_EjAng().
+		SET tManArg TO tEjData[0].
+		SET tManETA TO tEjData[1].
+		SET tManDV TO tEjData[2].
+		SET tManDur TO tEjData[3].
+		SET tManTime TO TIME:SECONDS+tManETA-(tManDur*0.50).
+		SET Mode TO 3.
+	} ELSE IF (mode = 3) {
+		IF (WARP = 0 AND tManTime-TIME:SECONDS > 150) {
+			kuniverse:timewarp:warpto(tManTime-40).
+		}
+		IF (tManTime-TIME:SECONDS <= 30) {
+			SET tTgSpeed TO VELOCITY:ORBIT:MAG+tManDV.
+			LOCK SVAL TO PROGRADE.
+			SET mode TO 4.
+		}
+	} ELSE IF (mode = 4) { // Transmunar Injection Burn
+		IF (tManTime-TIME:SECONDS <= 0 AND THROTTLE = 0) {SET TVAL TO 1.}
+		ELSE IF (SHIP:OBT:HASNEXTPATCH AND VELOCITY:ORBIT:MAG >= tTgSpeed) {
+			SET TVAL TO 0.
+			SET tManTime TO TIME:SECONDS+(ETA:TRANSITION*0.25).
+			SET mode TO 5.
+		}
+	} ELSE IF (mode = 5) { // Adjust
+		IF (WARP = 0 AND tManTime-TIME:SECONDS > 150) {
+			kuniverse:timewarp:warpto(tManTime-40).
+		} ELSE IF (WARP = 0 AND tManTime-TIME:SECONDS <= 0) {
+			SET tNpValPe TO SHIP:OBT:NEXTPATCH:PERIAPSIS.
+			SET tNpValIn TO SHIP:OBT:NEXTPATCH:INCLINATION.
+			SET tNpPe TO (tNpValPe > gOrbMin AND tNpValPe < gOrbMax).
+			SET tNpIn TO (tNpValIn < 270 AND tNpValIn > 90).
+			IF (GEN_AngSteer() = FALSE) {
+				SET TVAL TO 0.
+			} ELSE IF (tNpIn AND tNpPe) {
+				SET TVAL TO 0.
+				SET gOrbit TO 40000.
+				SET gOrbMin TO MAX(8000,gOrbit*(1-gPrec)).
+				SET gOrbMax TO gOrbit*(1+gPrec).
+				SET tManTime TO TIME:SECONDS+(ETA:TRANSITION).
+				kuniverse:timewarp:warpto(tManTime).
+				WAIT UNTIL SHIP:BODY:NAME = "Mun".
+				SET tManTime TO TIME:SECONDS+(ETA:PERIAPSIS-60).
+				SET mode TO 6.
+			} ELSE IF (tNpIn) {
+				IF (tNpValPe > gOrbMax) {
+					SET TVAL TO 0.3*MIN(1.0,ABS(1-(tNpValPe/gOrbit))).
+					SET SVAL TO RETROGRADE.
+				} ELSE IF (tNpValPe < gOrbMin) {
+					SET TVAL TO 0.3*MIN(1.0,ABS(1-(tNpValPe/gOrbit))).
+					SET SVAL TO PROGRADE.
+				}
+			}
+		}
+	} ELSE IF (mode = 6) { // Adjust
+		IF (WARP = 0 AND tManTime-TIME:SECONDS > 150) {
+			kuniverse:timewarp:warpto(tManTime-40).
+		} ELSE IF (WARP = 0 AND tManTime-TIME:SECONDS <= 0) {
+		}
+	} ELSE IF (mode = 1) { // SCRIPT END, RELEASE CONTROLS
+		CLEARSCREEN.
+		SET TVAL TO 0.
+		UNLOCK STEERING.
+		UNLOCK THROTTLE.
+		SET mode to 0.
+		PRINT "Deorbit and Land Complete"+tSpacer AT (3,15).
+		WAIT 100.
+	}
+
+	IF (THROTTLE > 0) {PRINT "#>> BURNING AT "+ROUND(THROTTLE*100,0)+"% <<#"+tSpacer AT (3,0).}
+	ELSE IF (WARP > 0) {PRINT "#>> WARPING AT "+WARP+" <<#"+tSpacer AT (3,0).}
+	ELSE {PRINT tSpacer+tSpacer AT (3,0).}
+	PRINT "Scola-Sys - Mun Transfer ("+ModeName[mode]+")"+tSpacer AT (3,2).
+	PRINT "Type Orbit   : "+gOperation[gOpt]+tSpacer AT (3,4).
+	PRINT "Target Orbit : "+ROUND(gOrbit/1000,0)+" Km"+tSpacer AT (3,5).
+	PRINT "Precision    : "+ROUND(gPrec*100,2)+" %"+tSpacer AT (3,6).
+	IF (mode = 4 OR mode = 5) {
+		PRINT "### Transmunar Injection Burn ###"+tSpacer AT (3,8).
+		PRINT "Argument: "+ROUND(tManArg,0)+" ("+ROUND(MATH_PhaseAng(),0)+")"+tSpacer AT (3,9).
+		PRINT "ETA: "+ROUND(tManTime-TIME:SECONDS,0)+"s DeV: "+ROUND(tManDV,2)+"m/s ("+ROUND(tManDur,2)+"s)"+tSpacer AT (3,10).
+	} ELSE IF (mode = 6 OR mode = 7) {
+		PRINT "### Orbit Tuning Burn ###"+tSpacer AT (3,8).
+		PRINT "NxP-PE :"+ROUND(SHIP:OBT:NEXTPATCH:PERIAPSIS/1000,2)+"Km"+tSpacer AT (3,9).
+		PRINT "NxP-In :"+ROUND(SHIP:OBT:NEXTPATCH:INCLINATION,2)+"°"+tSpacer AT (3,10).
+	}
 }
